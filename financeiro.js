@@ -5,10 +5,13 @@ const STORE_KEY = "financeiro-consignado-v1";
 const BACKUP_KEY = "financeiro-consignado-backup-v1";
 const DELETED_SALES_KEY = "financeiro-consignado-vendas-apagadas-v1";
 const SESSION_KEY = "financeiro-consignado-session-v1";
+const AUTH_SESSION_KEY = "financeiro-consignado-auth-session-v1";
 const DATA_VERSION = 11;
 const SUPABASE_URL = "https://ziennndoyekvguymsbap.supabase.co";
 const SUPABASE_KEY = "sb_publishable_aWQWtwt359ZHxHD0uf4HKQ_Sjilej57";
 const SUPABASE_STATE_ENDPOINT = `${SUPABASE_URL}/rest/v1/financeiro_app_state`;
+const SUPABASE_AUTH_ENDPOINT = `${SUPABASE_URL}/auth/v1`;
+const SUPABASE_PROFILE_ENDPOINT = `${SUPABASE_URL}/rest/v1/app_profiles`;
 const WORKING_CAPITAL = 17148;
 const WORKING_CAPITAL_GOAL = 25000;
 const HAS_SAVED_STATE = Boolean(localStorage.getItem(STORE_KEY));
@@ -31,11 +34,16 @@ const MOTIVATIONAL_MESSAGES = [
   "Meta cumprida e motivacao renovada. Vamos para a proxima!",
 ];
 let lastMotivationalMessage = "";
-const USERS = {
-  universo: { password: "@universo00", role: "socio_adm", label: "Socio ADM" },
-  mm: { password: "@Universo777", role: "socio_mm", label: "Socio MM" },
-  financeiro: { password: "@Financeiro00", role: "financeiro" },
-  wg: { password: "@wg01", role: "visualizador", label: "Visualizador" },
+const LOGIN_EMAIL_ALIASES = {
+  universo: "universo@financeira.com.br",
+  mm: "mm@financeira.com.br",
+  wg: "wg@financeira.com.br",
+};
+const DEFAULT_PROFILES = {
+  universo: { role: "socio_adm", label: "Socio ADM", permissions: ["admin", "payments", "view"] },
+  mm: { role: "socio_mm", label: "Socio MM", permissions: ["admin", "payments", "view"] },
+  financeiro: { role: "financeiro", label: "Financeiro", permissions: ["payments", "view"] },
+  wg: { role: "visualizador", label: "Visualizador", permissions: ["view", "receipts"] },
 };
 const SALE_FORMATS = {
   standard: "Imposto 35%",
@@ -50,6 +58,7 @@ const defaults = {
   workingCapitalBalance: WORKING_CAPITAL,
   capitalGoal: WORKING_CAPITAL_GOAL,
   capitalChangeHistory: [],
+  profiles: DEFAULT_PROFILES,
   weekArchives: [],
   firmAllocations: [],
   settings: {
@@ -310,6 +319,10 @@ function loadState() {
           status: expense.status === "Pago" && expense.paidDate ? "Pago" : "Pendente",
         }))
       : [];
+    const profiles = {
+      ...DEFAULT_PROFILES,
+      ...(parsed.profiles && typeof parsed.profiles === "object" ? parsed.profiles : {}),
+    };
     return {
       dataVersion: Number(parsed.dataVersion || 0),
       weeklyClosedAt: parsed.weeklyClosedAt || null,
@@ -341,6 +354,7 @@ function loadState() {
           }))
         : [],
       settings,
+      profiles,
       agents,
       sales,
       expenses,
@@ -355,10 +369,35 @@ function saveState() {
   scheduleCloudSave();
 }
 
+function getAuthSession() {
+  try {
+    const session = JSON.parse(sessionStorage.getItem(AUTH_SESSION_KEY) || "null");
+    if (!session?.access_token) return null;
+    if (session.expires_at && Date.now() >= Number(session.expires_at) * 1000) {
+      sessionStorage.removeItem(AUTH_SESSION_KEY);
+      return null;
+    }
+    return session;
+  } catch {
+    sessionStorage.removeItem(AUTH_SESSION_KEY);
+    return null;
+  }
+}
+
+function setAuthSession(session) {
+  if (!session?.access_token) {
+    sessionStorage.removeItem(AUTH_SESSION_KEY);
+    return;
+  }
+  sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+}
+
 function supabaseHeaders(extra = {}) {
+  const authSession = getAuthSession();
+  const bearer = authSession?.access_token || SUPABASE_KEY;
   return {
     apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
+    Authorization: `Bearer ${bearer}`,
     "Content-Type": "application/json",
     ...extra,
   };
@@ -487,16 +526,29 @@ function currentSession() {
   return sessionStorage.getItem(SESSION_KEY);
 }
 
+function currentProfile() {
+  const key = currentSession();
+  if (!key) return null;
+  return state.profiles?.[key] || DEFAULT_PROFILES[key] || null;
+}
+
 function currentRole() {
-  return USERS[currentSession()]?.role || "";
+  return currentProfile()?.role || "";
+}
+
+function hasPermission(permission) {
+  const profile = currentProfile();
+  const permissions = Array.isArray(profile?.permissions) ? profile.permissions : [];
+  if (permission === "admin") return ["socio_adm", "socio_mm", "admin"].includes(profile?.role) || permissions.includes("admin");
+  return permissions.includes(permission);
 }
 
 function isAdmin() {
-  return ["socio_adm", "socio_mm"].includes(currentRole());
+  return hasPermission("admin");
 }
 
 function canManagePayments() {
-  return isAdmin() || currentRole() === "financeiro";
+  return isAdmin() || hasPermission("payments") || currentRole() === "financeiro";
 }
 
 function moneyValue(value) {
@@ -509,7 +561,7 @@ function getCapitalGoal() {
 
 function currentUserLabel() {
   const key = currentSession();
-  return USERS[key]?.label || (key ? key.toUpperCase() : "Sistema");
+  return currentProfile()?.label || (key ? key.toUpperCase() : "Sistema");
 }
 
 function formatDateTime(value) {
@@ -557,22 +609,55 @@ function setLoggedView() {
     setActiveView("dashboard");
   }
   const sessionUser = currentSession();
-  const user = USERS[sessionUser];
+  const user = currentProfile();
   if (el.menuUserName) el.menuUserName.textContent = sessionUser ? sessionUser.toUpperCase() : "Usuario";
   if (el.menuUserRole) el.menuUserRole.textContent = user?.label || user?.role || "Perfil";
 }
 
-function login(user, password) {
-  const normalizedUser = String(user || "").trim().toLowerCase();
-  const normalizedPassword = String(password || "").trim();
-  const expectedPassword = USERS[normalizedUser]?.password || "";
-  if (expectedPassword.toLowerCase() !== normalizedPassword.toLowerCase()) return false;
-  sessionStorage.setItem(SESSION_KEY, normalizedUser);
+async function loadAuthProfile(authUser) {
+  const response = await fetch(`${SUPABASE_PROFILE_ENDPOINT}?user_id=eq.${encodeURIComponent(authUser.id)}&select=*`, {
+    headers: supabaseHeaders({ Accept: "application/json" }),
+  });
+  if (!response.ok) throw new Error(`Perfil Supabase ${response.status}`);
+  const profile = (await response.json())?.[0];
+  if (!profile?.username) throw new Error("Perfil nao cadastrado.");
+  state.profiles = {
+    ...(state.profiles || DEFAULT_PROFILES),
+    [profile.username.toLowerCase()]: {
+      role: profile.role,
+      label: profile.label,
+      permissions: Array.isArray(profile.permissions) ? profile.permissions : ["view"],
+      authUserId: profile.user_id,
+    },
+  };
+  sessionStorage.setItem(SESSION_KEY, profile.username.toLowerCase());
+  return profile;
+}
+
+function resolveLoginEmail(value) {
+  const login = String(value || "").trim().toLowerCase();
+  return LOGIN_EMAIL_ALIASES[login] || login;
+}
+
+async function loginWithSupabase(email, password) {
+  const response = await fetch(`${SUPABASE_AUTH_ENDPOINT}/token?grant_type=password`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_KEY,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!response.ok) return false;
+  const authSession = await response.json();
+  setAuthSession(authSession);
+  await loadAuthProfile(authSession.user);
   return true;
 }
 
 function logout() {
   sessionStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem(AUTH_SESSION_KEY);
   el.loginPassword.value = "";
   setMobileMenu(false);
   setLoggedView();
@@ -1108,7 +1193,7 @@ function renderCapitalSettings() {
         ? `Faltam ${currency(remaining)} para atingir a meta.`
         : `Meta superada em ${currency(Math.abs(remaining))}.`;
   el.capitalSettingsUpdatedBy.textContent = lastCapitalChange
-    ? `Por ${USERS[lastCapitalChange.changedBy]?.label || String(lastCapitalChange.changedBy || "Sistema").toUpperCase()}`
+    ? `Por ${state.profiles?.[lastCapitalChange.changedBy]?.label || DEFAULT_PROFILES[lastCapitalChange.changedBy]?.label || String(lastCapitalChange.changedBy || "Sistema").toUpperCase()}`
     : "Sem atualizacao manual";
   el.capitalSettingsUpdatedAt.textContent = lastCapitalChange
     ? formatDateTime(lastCapitalChange.changedAt)
@@ -1148,7 +1233,7 @@ function renderCapitalSettings() {
       </div>
       <div>
         <span>Usuario</span>
-        <strong>${USERS[entry.changedBy]?.label || String(entry.changedBy || "Sistema").toUpperCase()}</strong>
+        <strong>${state.profiles?.[entry.changedBy]?.label || DEFAULT_PROFILES[entry.changedBy]?.label || String(entry.changedBy || "Sistema").toUpperCase()}</strong>
       </div>
     `;
     el.capitalChangeHistory.append(item);
@@ -1823,7 +1908,7 @@ function buildFirmReceiptCanvas() {
   context.fillText(`EMITIDO EM ${dateWithWeekday(todayISO()).toUpperCase()}`, right, 82);
   context.fillStyle = softInk;
   context.font = "600 20px Arial";
-  context.fillText(`RESPONSAVEL: ${(USERS[currentSession()]?.label || currentSession() || "SISTEMA").toUpperCase()}`, right, 116);
+  context.fillText(`RESPONSAVEL: ${(currentUserLabel() || "SISTEMA").toUpperCase()}`, right, 116);
   context.textAlign = "left";
 
   drawRoundedRect(context, left, 166, pageWidth, 138, 8, gold);
@@ -3033,16 +3118,28 @@ setCurrencyInput(el.expenseAmount, 0);
 setCurrencyInput(el.simulationAmount, 0);
 setCurrencyInput(el.firmAllocationAmount, 0);
 
-el.loginForm.addEventListener("submit", (event) => {
+el.loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (!login(el.loginUser.value, el.loginPassword.value)) {
-    el.loginError.textContent = "Usuario ou senha incorretos.";
-    return;
-  }
   el.loginError.textContent = "";
-  el.loginPassword.value = "";
-  render();
-  loadStateFromCloud();
+  const user = el.loginUser.value.trim();
+  const password = el.loginPassword.value;
+  const submitButton = el.loginForm.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
+  try {
+    const logged = await loginWithSupabase(resolveLoginEmail(user), password);
+    if (!logged) {
+      el.loginError.textContent = "Usuario ou senha incorretos.";
+      return;
+    }
+    el.loginPassword.value = "";
+    render();
+    loadStateFromCloud();
+  } catch (error) {
+    console.warn("Falha no login.", error);
+    el.loginError.textContent = error.message || "Nao foi possivel entrar.";
+  } finally {
+    submitButton.disabled = false;
+  }
 });
 
 el.togglePasswordBtn.addEventListener("click", () => {

@@ -38,6 +38,71 @@ on conflict (id) do nothing;
 
 -- Estrutura segura preparada para a futura etapa com Supabase Auth/RLS por perfil.
 -- O app atual continua usando financeiro_app_state para nao duplicar o giro nem quebrar dados existentes.
+create table if not exists app_profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  username text unique not null,
+  role text not null check (role in ('socio_adm', 'socio_mm', 'financeiro', 'visualizador')),
+  label text not null,
+  permissions text[] not null default array['view']::text[],
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table app_profiles enable row level security;
+
+create or replace function is_app_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1
+    from app_profiles
+    where user_id = auth.uid()
+      and ('admin' = any(permissions) or role in ('socio_adm', 'socio_mm'))
+  );
+$$;
+
+create or replace function can_manage_payments()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1
+    from app_profiles
+    where user_id = auth.uid()
+      and ('payments' = any(permissions) or 'admin' = any(permissions) or role in ('socio_adm', 'socio_mm', 'financeiro'))
+  );
+$$;
+
+drop policy if exists "profile_read_self_or_admin" on app_profiles;
+drop policy if exists "profile_admin_update" on app_profiles;
+drop policy if exists "profile_admin_insert" on app_profiles;
+
+create policy "profile_read_self_or_admin"
+on app_profiles
+for select
+to authenticated
+using (user_id = auth.uid() or is_app_admin());
+
+create policy "profile_admin_update"
+on app_profiles
+for update
+to authenticated
+using (is_app_admin())
+with check (is_app_admin());
+
+create policy "profile_admin_insert"
+on app_profiles
+for insert
+to authenticated
+with check (is_app_admin());
+
 create table if not exists financial_settings (
   id uuid primary key default gen_random_uuid(),
   active boolean not null default true,
@@ -69,23 +134,23 @@ create policy "admin_read_financial_settings"
 on financial_settings
 for select
 to authenticated
-using ((auth.jwt() ->> 'role') = 'admin');
+using (is_app_admin());
 
 create policy "admin_update_financial_settings"
 on financial_settings
 for update
 to authenticated
-using ((auth.jwt() ->> 'role') = 'admin')
-with check ((auth.jwt() ->> 'role') = 'admin');
+using (is_app_admin())
+with check (is_app_admin());
 
 create policy "admin_read_capital_history"
 on capital_change_history
 for select
 to authenticated
-using ((auth.jwt() ->> 'role') = 'admin');
+using (is_app_admin());
 
 create policy "admin_insert_capital_history"
 on capital_change_history
 for insert
 to authenticated
-with check ((auth.jwt() ->> 'role') = 'admin');
+with check (is_app_admin());
