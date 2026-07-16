@@ -12,9 +12,6 @@ const SUPABASE_STATE_ENDPOINT = `${SUPABASE_URL}/rest/v1/financeiro_app_state`;
 const WORKING_CAPITAL = 17148;
 const WORKING_CAPITAL_GOAL = 25000;
 const HAS_SAVED_STATE = Boolean(localStorage.getItem(STORE_KEY));
-const CASH_TO_CAPITAL_TRANSFER_ID = "ALLOC-FECHAMENTO-CAIXA-GIRO-20260707";
-const EXTRA_WORKING_CAPITAL_ID = "ALLOC-GIRO-EXTRA-12282-20260707";
-const EXTRA_WORKING_CAPITAL_AMOUNT = 12282;
 const LAST_WEEK_ARCHIVE_ID = "FECHAMENTO-SEMANA-PASSADA-20260707";
 const GENERAL_LINE_RATE = 40;
 const LINE_1_RATE = 15;
@@ -984,43 +981,6 @@ function applyDataMigrations() {
 
   if (currentVersion < 7 && HAS_SAVED_STATE) {
     state.workingCapitalBalance = Number(state.workingCapitalBalance || 0) + WORKING_CAPITAL;
-    changed = true;
-  }
-
-  const alreadyTransferred = (state.firmAllocations || []).some(
-    (allocation) => allocation.id === CASH_TO_CAPITAL_TRANSFER_ID,
-  );
-  if (HAS_SAVED_STATE && !alreadyTransferred) {
-    const availableCash = summarize().cashBalance;
-    if (availableCash > 0) {
-      state.firmAllocations.unshift({
-        id: CASH_TO_CAPITAL_TRANSFER_ID,
-        type: "cash_working_capital",
-        amount: availableCash,
-        date: todayISO(),
-        notes: "Transferencia do saldo do caixa para o giro de capital",
-        createdBy: currentSession(),
-        createdAt: new Date().toISOString(),
-      });
-      state.workingCapitalBalance = Number(state.workingCapitalBalance || 0) + availableCash;
-      changed = true;
-    }
-  }
-
-  const extraAlreadyAdded = (state.firmAllocations || []).some(
-    (allocation) => allocation.id === EXTRA_WORKING_CAPITAL_ID,
-  );
-  if (HAS_SAVED_STATE && !extraAlreadyAdded) {
-    state.firmAllocations.unshift({
-      id: EXTRA_WORKING_CAPITAL_ID,
-      type: "working_capital",
-      amount: EXTRA_WORKING_CAPITAL_AMOUNT,
-      date: todayISO(),
-      notes: "Acrescimo manual ao giro de capital",
-      createdBy: currentSession(),
-      createdAt: new Date().toISOString(),
-    });
-    state.workingCapitalBalance = Number(state.workingCapitalBalance || 0) + EXTRA_WORKING_CAPITAL_AMOUNT;
     changed = true;
   }
 
