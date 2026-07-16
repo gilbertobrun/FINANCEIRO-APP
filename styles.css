@@ -5208,3 +5208,175 @@ h2 {
     margin-bottom: 12px;
   }
 }
+
+/* Etapa 5 - registro de venda em formato app bancario */
+.sale-operation-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 18px;
+  border: 1px solid rgba(242, 205, 115, 0.2);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(242, 205, 115, 0.16), transparent 42%),
+    linear-gradient(145deg, #141414, #080808);
+}
+
+.sale-operation-hero span,
+.sale-operation-hero small {
+  display: block;
+  color: #cdbd8e;
+  font-weight: 800;
+}
+
+.sale-operation-hero span {
+  margin-bottom: 7px;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.sale-operation-hero strong {
+  display: block;
+  color: #fff8df;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.sale-operation-hero small {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.sale-operation-total {
+  min-width: 220px;
+  padding: 16px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #f5d372, #d7a94d);
+  color: #050505;
+  text-align: right;
+}
+
+.sale-operation-total span,
+.sale-operation-total strong {
+  color: #050505 !important;
+}
+
+.sale-operation-total strong {
+  font-size: 27px;
+}
+
+@media (max-width: 767.98px) {
+  [data-view="sale"] .sale-panel {
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .sale-operation-hero {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin: 4px 0 12px;
+    padding: 16px;
+    border-radius: 24px;
+  }
+
+  .sale-operation-hero strong {
+    font-size: 25px;
+  }
+
+  .sale-operation-total {
+    min-width: 0;
+    text-align: left;
+  }
+
+  .sale-operation-total strong {
+    font-size: 31px;
+  }
+
+  [data-view="sale"] .panel-heading {
+    align-items: start;
+    margin: 0 0 10px;
+    padding: 0 2px;
+  }
+
+  [data-view="sale"] .panel-heading h2 {
+    font-size: 18px;
+  }
+
+  [data-view="sale"] .panel-heading > span {
+    display: none;
+  }
+
+  [data-view="sale"] .form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+
+  [data-view="sale"] label {
+    gap: 8px;
+    padding: 13px;
+    border: 1px solid rgba(242, 205, 115, 0.16);
+    border-radius: 18px;
+    background: linear-gradient(145deg, #131313, #080808);
+    color: #f5d372 !important;
+  }
+
+  [data-view="sale"] label small {
+    color: #b8a978 !important;
+    font-size: 12px;
+    line-height: 1.25;
+  }
+
+  [data-view="sale"] input,
+  [data-view="sale"] select {
+    min-height: 52px;
+    border-radius: 15px !important;
+    padding: 12px 13px !important;
+    font-size: 16px;
+    font-weight: 850;
+  }
+
+  #saleAmount {
+    font-size: 22px;
+  }
+
+  [data-view="sale"] .breakdown {
+    grid-template-columns: 1fr !important;
+    gap: 9px;
+    margin: 12px 0;
+  }
+
+  [data-view="sale"] .breakdown div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 62px;
+    border-radius: 18px !important;
+    padding: 12px 14px !important;
+  }
+
+  [data-view="sale"] .breakdown span {
+    font-size: 12px;
+    font-weight: 850;
+  }
+
+  [data-view="sale"] .breakdown strong {
+    margin-top: 0;
+    font-size: 18px;
+    text-align: right;
+  }
+
+  [data-view="sale"] .primary-button[type="submit"] {
+    width: 100%;
+    min-height: 58px;
+    margin-top: 10px;
+    border-radius: 18px !important;
+    font-size: 17px;
+    font-weight: 950;
+  }
+}

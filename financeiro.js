@@ -146,6 +146,7 @@ const el = {
   weeklyBalance: document.querySelector("#weeklyBalance"),
   weeklyDailyFeed: document.querySelector("#weeklyDailyFeed"),
   salePreview: document.querySelector("#salePreview"),
+  salePreviewHero: document.querySelector("#salePreviewHero"),
   simulationForm: document.querySelector("#simulationForm"),
   simulationAmount: document.querySelector("#simulationAmount"),
   simulationFormat: document.querySelector("#simulationFormat"),
@@ -2995,6 +2996,7 @@ function renderPreview() {
   el.previewFirm.textContent = currency(calc.firm);
   el.previewTotalFirm.textContent = currency(calc.totalFirm);
   el.salePreview.textContent = `${currency(calc.totalFirm)} total firma`;
+  if (el.salePreviewHero) el.salePreviewHero.textContent = currency(calc.totalFirm);
 }
 
 function renderSimulation() {

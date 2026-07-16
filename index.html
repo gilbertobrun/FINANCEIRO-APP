@@ -11,7 +11,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <link rel="icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260716-dashboard-mobile" />
+    <link rel="stylesheet" href="./styles.css?v=20260716-sale-mobile" />
   </head>
   <body>
     <section id="loginScreen" class="login-screen">
@@ -296,6 +296,18 @@
 
         <section class="app-view" data-view="sale" data-admin-only>
           <form id="saleForm" class="panel sale-panel">
+            <section class="sale-operation-hero" aria-label="Resumo do lancamento">
+              <div>
+                <span>Nova operacao</span>
+                <strong>Registrar emprestimo</strong>
+                <small>Preencha o valor, formato e vendedores para calcular automaticamente.</small>
+              </div>
+              <div class="sale-operation-total">
+                <span>Resultado firma</span>
+                <strong id="salePreviewHero">R$ 0,00</strong>
+              </div>
+            </section>
+
             <div class="panel-heading">
               <h2>Lancar venda</h2>
               <span id="salePreview">R$ 0,00 total firma</span>
@@ -821,7 +833,7 @@
     </dialog>
 
     <script src="./migration-data.js?v=20260624-permissoes"></script>
-    <script src="./financeiro.js?v=20260716-dashboard-mobile"></script>
+    <script src="./financeiro.js?v=20260716-sale-mobile"></script>
   </body>
 </html>
 
