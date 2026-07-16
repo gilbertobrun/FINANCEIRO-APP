@@ -11,7 +11,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <link rel="icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260716-sidebar-bank" />
+    <link rel="stylesheet" href="./styles.css?v=20260716-menu-mobile-fix" />
   </head>
   <body>
     <section id="loginScreen" class="login-screen">
@@ -49,6 +49,12 @@
             <span>Banco de consignado</span>
           </div>
           <button id="closeMenuBtn" class="menu-close-button" type="button" aria-label="Fechar menu">X</button>
+        </div>
+
+        <div class="mobile-user-card">
+          <span>Acesso atual</span>
+          <strong id="menuUserName">Usuario</strong>
+          <small id="menuUserRole">Perfil</small>
         </div>
 
         <nav class="menu-list">
@@ -714,6 +720,6 @@
     </dialog>
 
     <script src="./migration-data.js?v=20260624-permissoes"></script>
-    <script src="./financeiro.js?v=20260716-sidebar-bank"></script>
+    <script src="./financeiro.js?v=20260716-menu-mobile-fix"></script>
   </body>
 </html>

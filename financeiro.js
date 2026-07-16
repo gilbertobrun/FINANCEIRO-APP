@@ -114,6 +114,8 @@ const el = {
   menuOverlay: document.querySelector("#menuOverlay"),
   menuToggleBtn: document.querySelector("#menuToggleBtn"),
   closeMenuBtn: document.querySelector("#closeMenuBtn"),
+  menuUserName: document.querySelector("#menuUserName"),
+  menuUserRole: document.querySelector("#menuUserRole"),
   totalSold: document.querySelector("#totalSold"),
   netCompany: document.querySelector("#netCompany"),
   firmCash: document.querySelector("#firmCash"),
@@ -469,7 +471,9 @@ function canManagePayments() {
 
 function setMobileMenu(open) {
   el.bankApp.classList.toggle("menu-open", Boolean(open));
+  document.body.classList.toggle("menu-lock", Boolean(open));
   el.menuToggleBtn?.setAttribute("aria-expanded", String(Boolean(open)));
+  el.menuOverlay?.setAttribute("aria-hidden", String(!open));
 }
 
 function setLoggedView() {
@@ -482,6 +486,10 @@ function setLoggedView() {
   if (logged && !isAdmin() && document.querySelector(".app-view.active[data-admin-only]")) {
     setActiveView("dashboard");
   }
+  const sessionUser = currentSession();
+  const user = USERS[sessionUser];
+  if (el.menuUserName) el.menuUserName.textContent = sessionUser ? sessionUser.toUpperCase() : "Usuario";
+  if (el.menuUserRole) el.menuUserRole.textContent = user?.label || user?.role || "Perfil";
 }
 
 function login(user, password) {
@@ -496,6 +504,7 @@ function login(user, password) {
 function logout() {
   sessionStorage.removeItem(SESSION_KEY);
   el.loginPassword.value = "";
+  setMobileMenu(false);
   setLoggedView();
 }
 
@@ -3209,6 +3218,9 @@ document.querySelectorAll("[data-logout]").forEach((button) => button.addEventLi
 el.menuToggleBtn?.addEventListener("click", () => setMobileMenu(!el.bankApp.classList.contains("menu-open")));
 el.closeMenuBtn?.addEventListener("click", () => setMobileMenu(false));
 el.menuOverlay?.addEventListener("click", () => setMobileMenu(false));
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") setMobileMenu(false);
+});
 el.statusFilter.addEventListener("change", renderSales);
 el.weekArchiveFilter.addEventListener("change", renderSales);
 el.exportCsvBtn.addEventListener("click", exportCsv);

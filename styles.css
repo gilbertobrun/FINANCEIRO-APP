@@ -4626,3 +4626,138 @@ h2 {
     grid-template-columns: 1fr 1fr !important;
   }
 }
+
+/* Correcao mobile: menu visivel em iPhone/Android vertical */
+@media (max-width: 767.98px) {
+  body.menu-lock {
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  .bank-app {
+    display: block !important;
+    min-height: 100dvh !important;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .hamburger-button {
+    display: inline-flex !important;
+    flex: 0 0 42px;
+  }
+
+  .topbar {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 35 !important;
+  }
+
+  .app-menu {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 80 !important;
+    display: grid !important;
+    width: 100vw !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    grid-template-rows: auto auto minmax(0, 1fr) auto !important;
+    gap: 14px !important;
+    overflow: hidden !important;
+    padding: calc(18px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom)) !important;
+    border-right: 0 !important;
+    background:
+      radial-gradient(circle at 20% 0%, rgba(242, 205, 115, 0.18), transparent 32%),
+      linear-gradient(180deg, #101010 0%, #060606 100%) !important;
+    transform: translateX(-104%) !important;
+    transition: transform 0.24s ease !important;
+  }
+
+  .bank-app.menu-open .app-menu {
+    transform: translateX(0) !important;
+  }
+
+  .menu-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 70 !important;
+    display: block !important;
+    pointer-events: none;
+    background: transparent;
+  }
+
+  .bank-app.menu-open .menu-overlay {
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.58);
+  }
+
+  .brand-block {
+    min-height: auto !important;
+    padding: 0 0 14px !important;
+  }
+
+  .menu-close-button {
+    display: inline-flex !important;
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(242, 205, 115, 0.32);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    color: #f5d372;
+    font-size: 15px;
+    font-weight: 900;
+  }
+
+  .mobile-user-card {
+    display: grid !important;
+    gap: 3px;
+    border: 1px solid rgba(242, 205, 115, 0.18);
+    border-radius: 18px;
+    padding: 13px 14px;
+    background: rgba(255, 255, 255, 0.045);
+  }
+
+  .mobile-user-card span,
+  .mobile-user-card small {
+    color: #cbbb8c;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .mobile-user-card strong {
+    color: #fff7df;
+    font-size: 18px;
+  }
+
+  .menu-list {
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    padding: 2px 2px 8px !important;
+  }
+
+  .menu-item {
+    width: 100%;
+    min-height: 56px !important;
+    padding: 0 14px !important;
+    border-radius: 16px !important;
+    font-size: 15px;
+  }
+
+  .menu-item span:last-child {
+    white-space: normal !important;
+  }
+
+  .mobile-menu {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-user-card {
+    display: none !important;
+  }
+}
