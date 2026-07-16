@@ -11,7 +11,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <link rel="icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260716-sale-mobile" />
+    <link rel="stylesheet" href="./styles.css?v=20260716-receipts-preview" />
   </head>
   <body>
     <section id="loginScreen" class="login-screen">
@@ -461,6 +461,7 @@
               <strong>Comprovante financeiro da firma</strong>
             </div>
             <div>
+              <button id="previewFirmReceiptBtn" class="ghost-button receipt-preview-button" type="button">Visualizar</button>
               <button id="downloadFirmReceiptBtn" class="secondary-button" type="button">Baixar comprovante</button>
               <button id="printFirmReceiptBtn" class="primary-button" type="button">Imprimir comprovante</button>
             </div>
@@ -787,6 +788,25 @@
       </nav>
     </main>
 
+    <dialog id="firmReceiptDialog" class="receipt-dialog" aria-label="Previa do comprovante da firma">
+      <div class="receipt-dialog-card">
+        <div class="receipt-dialog-heading">
+          <div>
+            <span>Previa do documento</span>
+            <strong>Comprovante financeiro da firma</strong>
+          </div>
+          <button id="closeFirmReceiptDialogBtn" class="dialog-close" type="button" aria-label="Fechar">X</button>
+        </div>
+        <div class="receipt-preview-frame">
+          <img id="firmReceiptPreviewImage" alt="Previa do comprovante financeiro da firma" />
+        </div>
+        <div class="receipt-dialog-actions">
+          <button id="previewDownloadFirmReceiptBtn" class="secondary-button" type="button">Baixar imagem</button>
+          <button id="previewPrintFirmReceiptBtn" class="primary-button" type="button">Imprimir</button>
+        </div>
+      </div>
+    </dialog>
+
     <template id="agentRowTemplate">
       <div class="agent-row">
         <div class="agent-identity">
@@ -833,7 +853,7 @@
     </dialog>
 
     <script src="./migration-data.js?v=20260624-permissoes"></script>
-    <script src="./financeiro.js?v=20260716-sale-mobile"></script>
+    <script src="./financeiro.js?v=20260716-receipts-preview"></script>
   </body>
 </html>
 

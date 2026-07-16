@@ -251,8 +251,14 @@ const el = {
   firmAllocationDate: document.querySelector("#firmAllocationDate"),
   firmAllocationNotes: document.querySelector("#firmAllocationNotes"),
   firmAllocationHistory: document.querySelector("#firmAllocationHistory"),
+  previewFirmReceiptBtn: document.querySelector("#previewFirmReceiptBtn"),
   downloadFirmReceiptBtn: document.querySelector("#downloadFirmReceiptBtn"),
   printFirmReceiptBtn: document.querySelector("#printFirmReceiptBtn"),
+  firmReceiptDialog: document.querySelector("#firmReceiptDialog"),
+  closeFirmReceiptDialogBtn: document.querySelector("#closeFirmReceiptDialogBtn"),
+  firmReceiptPreviewImage: document.querySelector("#firmReceiptPreviewImage"),
+  previewDownloadFirmReceiptBtn: document.querySelector("#previewDownloadFirmReceiptBtn"),
+  previewPrintFirmReceiptBtn: document.querySelector("#previewPrintFirmReceiptBtn"),
   historyStandardTotal: document.querySelector("#historyStandardTotal"),
   historyBank40Total: document.querySelector("#historyBank40Total"),
   historyBank40SpecialTotal: document.querySelector("#historyBank40SpecialTotal"),
@@ -2054,6 +2060,16 @@ function downloadFirmReceipt() {
   alert("Comprovante da firma gerado. Verifique a pasta Downloads.");
 }
 
+function previewFirmReceipt() {
+  const canvas = buildFirmReceiptCanvas();
+  el.firmReceiptPreviewImage.src = canvas.toDataURL("image/png");
+  if (typeof el.firmReceiptDialog.showModal === "function") {
+    el.firmReceiptDialog.showModal();
+  } else {
+    window.open(el.firmReceiptPreviewImage.src, "_blank");
+  }
+}
+
 function printFirmReceipt() {
   const printWindow = window.open("", "_blank");
   if (!printWindow) {
@@ -3171,6 +3187,7 @@ el.togglePasswordBtn.addEventListener("click", () => {
 });
 
 el.logoutBtn.addEventListener("click", logout);
+el.previewFirmReceiptBtn.addEventListener("click", previewFirmReceipt);
 el.downloadFirmReceiptBtn.addEventListener("click", () => {
   el.downloadFirmReceiptBtn.disabled = true;
   el.downloadFirmReceiptBtn.textContent = "Gerando...";
@@ -3184,6 +3201,12 @@ el.downloadFirmReceiptBtn.addEventListener("click", () => {
   }
 });
 el.printFirmReceiptBtn.addEventListener("click", printFirmReceipt);
+el.closeFirmReceiptDialogBtn.addEventListener("click", () => el.firmReceiptDialog.close());
+el.firmReceiptDialog.addEventListener("click", (event) => {
+  if (event.target === el.firmReceiptDialog) el.firmReceiptDialog.close();
+});
+el.previewDownloadFirmReceiptBtn.addEventListener("click", downloadFirmReceipt);
+el.previewPrintFirmReceiptBtn.addEventListener("click", printFirmReceipt);
 
 window.addEventListener("beforeinstallprompt", (event) => {
   event.preventDefault();

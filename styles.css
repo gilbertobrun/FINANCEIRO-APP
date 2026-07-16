@@ -1090,6 +1090,78 @@ label,
   min-width: 180px;
 }
 
+.receipt-dialog {
+  width: min(1120px, calc(100vw - 28px));
+  max-height: calc(100dvh - 28px);
+  padding: 0;
+  border: 1px solid rgba(214, 169, 79, 0.38);
+  border-radius: 24px;
+  background: #080808;
+  color: #fff7df;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.72);
+}
+
+.receipt-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.receipt-dialog-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  max-height: calc(100dvh - 28px);
+}
+
+.receipt-dialog-heading,
+.receipt-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid rgba(214, 169, 79, 0.2);
+  background: linear-gradient(145deg, #15120a, #080808);
+}
+
+.receipt-dialog-actions {
+  border-top: 1px solid rgba(214, 169, 79, 0.2);
+  border-bottom: 0;
+}
+
+.receipt-dialog-heading span {
+  display: block;
+  color: #d8c89e;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.receipt-dialog-heading strong {
+  display: block;
+  margin-top: 4px;
+  color: #fff7df;
+  font-size: 19px;
+}
+
+.receipt-preview-frame {
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+  background: #111;
+}
+
+.receipt-preview-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  background: #fffaf0;
+}
+
+.receipt-dialog-actions button {
+  min-width: 180px;
+}
+
 .barbudo-closing-panel {
   display: grid;
   gap: 18px;
@@ -5378,5 +5450,62 @@ h2 {
     border-radius: 18px !important;
     font-size: 17px;
     font-weight: 950;
+  }
+
+  .firm-receipt-actions {
+    display: grid;
+    gap: 14px;
+    border-radius: 22px;
+    padding: 15px;
+  }
+
+  .firm-receipt-actions > div:last-child {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+
+  .firm-receipt-actions button {
+    width: 100%;
+    min-height: 52px;
+    border-radius: 16px !important;
+  }
+
+  .receipt-dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+    border-radius: 20px;
+  }
+
+  .receipt-dialog-card {
+    max-height: calc(100dvh - 16px);
+  }
+
+  .receipt-dialog-heading,
+  .receipt-dialog-actions {
+    padding: 13px;
+  }
+
+  .receipt-dialog-heading strong {
+    font-size: 16px;
+  }
+
+  .receipt-preview-frame {
+    padding: 10px;
+  }
+
+  .receipt-preview-frame img {
+    width: 980px;
+    max-width: none;
+  }
+
+  .receipt-dialog-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .receipt-dialog-actions button {
+    width: 100%;
+    min-height: 52px;
   }
 }
