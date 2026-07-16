@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
@@ -11,7 +11,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <link rel="icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260709-sem-cache" />
+    <link rel="stylesheet" href="./styles.css?v=20260716-olho-senha" />
   </head>
   <body>
     <section id="loginScreen" class="login-screen">
@@ -29,7 +29,10 @@
         </label>
         <label>
           Senha
-          <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Digite a senha" required />
+          <span class="password-field">
+            <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Digite a senha" required />
+            <button id="togglePasswordBtn" class="password-toggle" type="button" aria-label="Mostrar senha" aria-pressed="false"></button>
+          </span>
         </label>
         <p id="loginError" class="login-error" aria-live="polite"></p>
         <button class="primary-button" type="submit">Entrar</button>
@@ -694,7 +697,6 @@
     </dialog>
 
     <script src="./migration-data.js?v=20260624-permissoes"></script>
-    <script src="./financeiro.js?v=20260716-logins"></script>
+    <script src="./financeiro.js?v=20260716-olho-senha"></script>
   </body>
 </html>
-

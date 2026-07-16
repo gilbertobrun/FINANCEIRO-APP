@@ -106,6 +106,7 @@ const el = {
   loginForm: document.querySelector("#loginForm"),
   loginUser: document.querySelector("#loginUser"),
   loginPassword: document.querySelector("#loginPassword"),
+  togglePasswordBtn: document.querySelector("#togglePasswordBtn"),
   loginError: document.querySelector("#loginError"),
   installAppBtn: document.querySelector("#installAppBtn"),
   bankApp: document.querySelector(".bank-app"),
@@ -2911,6 +2912,13 @@ el.loginForm.addEventListener("submit", (event) => {
   el.loginPassword.value = "";
   render();
   loadStateFromCloud();
+});
+
+el.togglePasswordBtn.addEventListener("click", () => {
+  const shouldShow = el.loginPassword.type === "password";
+  el.loginPassword.type = shouldShow ? "text" : "password";
+  el.togglePasswordBtn.setAttribute("aria-pressed", String(shouldShow));
+  el.togglePasswordBtn.setAttribute("aria-label", shouldShow ? "Ocultar senha" : "Mostrar senha");
 });
 
 el.logoutBtn.addEventListener("click", logout);

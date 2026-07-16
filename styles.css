@@ -73,6 +73,64 @@ button {
   margin-bottom: 4px;
 }
 
+.password-field {
+  position: relative;
+  display: block;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 52px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(214, 169, 79, 0.36);
+  border-radius: 50%;
+  background: #090909;
+  color: var(--gold-light);
+  transform: translateY(-50%);
+}
+
+.password-toggle::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  left: 8px;
+  width: 20px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-radius: 50% / 65%;
+}
+
+.password-toggle::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.password-toggle[aria-pressed="true"]::before {
+  opacity: 0.75;
+}
+
+.password-toggle[aria-pressed="true"]::after {
+  top: 18px;
+  left: 9px;
+  width: 20px;
+  height: 2px;
+  border-radius: 999px;
+  transform: rotate(-35deg);
+}
+
 .login-error {
   min-height: 18px;
   margin: 0;
