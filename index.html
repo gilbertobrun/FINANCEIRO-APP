@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
@@ -11,7 +11,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <link rel="icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260716-auth-only" />
+    <link rel="stylesheet" href="./styles.css?v=20260716-dashboard-mobile" />
   </head>
   <body>
     <section id="loginScreen" class="login-screen">
@@ -121,6 +121,31 @@
             <div class="home-total">
               <span>Total vendido</span>
               <strong id="totalSold">R$ 0,00</strong>
+            </div>
+          </section>
+
+          <section class="capital-overview" aria-label="Capital atual">
+            <div class="capital-overview-main">
+              <span>Capital atual</span>
+              <strong id="dashboardCapitalCurrent">R$ 0,00</strong>
+              <small id="dashboardCapitalStatus">Acompanhamento da meta financeira</small>
+            </div>
+            <div class="capital-overview-grid">
+              <article>
+                <span>Meta</span>
+                <strong id="dashboardCapitalGoal">R$ 0,00</strong>
+              </article>
+              <article>
+                <span>Falta para meta</span>
+                <strong id="dashboardCapitalRemaining">R$ 0,00</strong>
+              </article>
+              <article>
+                <span>Progresso</span>
+                <strong id="dashboardCapitalPercent">0%</strong>
+              </article>
+            </div>
+            <div class="capital-overview-progress" aria-hidden="true">
+              <span id="dashboardCapitalProgress"></span>
             </div>
           </section>
 
@@ -796,6 +821,7 @@
     </dialog>
 
     <script src="./migration-data.js?v=20260624-permissoes"></script>
-   <script src="./financeiro.js?v=20260716-auth-only"></script>
+    <script src="./financeiro.js?v=20260716-dashboard-mobile"></script>
   </body>
 </html>
+

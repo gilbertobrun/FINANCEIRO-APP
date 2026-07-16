@@ -125,6 +125,12 @@ const el = {
   menuUserName: document.querySelector("#menuUserName"),
   menuUserRole: document.querySelector("#menuUserRole"),
   totalSold: document.querySelector("#totalSold"),
+  dashboardCapitalCurrent: document.querySelector("#dashboardCapitalCurrent"),
+  dashboardCapitalGoal: document.querySelector("#dashboardCapitalGoal"),
+  dashboardCapitalRemaining: document.querySelector("#dashboardCapitalRemaining"),
+  dashboardCapitalPercent: document.querySelector("#dashboardCapitalPercent"),
+  dashboardCapitalStatus: document.querySelector("#dashboardCapitalStatus"),
+  dashboardCapitalProgress: document.querySelector("#dashboardCapitalProgress"),
   netCompany: document.querySelector("#netCompany"),
   firmCash: document.querySelector("#firmCash"),
   totalExpenses: document.querySelector("#totalExpenses"),
@@ -1160,7 +1166,20 @@ function renderAgents() {
 
 function renderSummary() {
   const totals = summarize();
+  const capital = moneyValue(state.workingCapitalBalance ?? WORKING_CAPITAL);
+  const goal = getCapitalGoal();
+  const capitalPercent = goal > 0 ? Math.min(100, (capital / goal) * 100) : 0;
+  const remaining = Math.max(0, goal - capital);
   el.totalSold.textContent = currency(totals.totalSold);
+  if (el.dashboardCapitalCurrent) el.dashboardCapitalCurrent.textContent = currency(capital);
+  if (el.dashboardCapitalGoal) el.dashboardCapitalGoal.textContent = currency(goal);
+  if (el.dashboardCapitalRemaining) el.dashboardCapitalRemaining.textContent = currency(remaining);
+  if (el.dashboardCapitalPercent) el.dashboardCapitalPercent.textContent = goal > 0 ? `${capitalPercent.toFixed(0)}%` : "Sem meta";
+  if (el.dashboardCapitalStatus) {
+    el.dashboardCapitalStatus.textContent =
+      goal > 0 && capital >= goal ? "Meta batida. Empresa redonda." : "Acompanhamento da meta financeira";
+  }
+  if (el.dashboardCapitalProgress) el.dashboardCapitalProgress.style.width = `${capitalPercent}%`;
   el.netCompany.textContent = currency(totals.netCompany);
   el.firmCash.textContent = currency(totals.firmCash);
   el.totalExpenses.textContent = currency(totals.pendingExpenses);
