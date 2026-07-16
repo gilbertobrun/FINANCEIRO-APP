@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
@@ -11,7 +11,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <link rel="icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260716-menu-mobile-fix" />
+    <link rel="stylesheet" href="./styles.css?v=20260716-menu-mobile-vertical" />
   </head>
   <body>
     <section id="loginScreen" class="login-screen">
@@ -57,21 +57,26 @@
           <small id="menuUserRole">Perfil</small>
         </div>
 
-        <nav class="menu-list">
+        <nav class="menu-list" aria-label="Navegacao principal">
+          <span class="menu-section-title">Principal</span>
+          <button class="menu-item active" type="button" data-view-target="dashboard"><span class="menu-icon icon-home-logo">F</span><span class="menu-copy"><strong>Dashboard</strong><small>Painel geral da financeira</small></span></button>
+          <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-vendors" aria-hidden="true"></span><span class="menu-copy"><strong>Clientes</strong><small>Historico e consultas</small></span></button>
+
           <span class="menu-section-title">Operacao</span>
-          <button class="menu-item active" type="button" data-view-target="dashboard"><span class="menu-icon icon-home-logo">F</span><span>Dashboard</span></button>
-          <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-vendors" aria-hidden="true"></span><span>Clientes</span></button>
-          <button class="menu-item" type="button" data-view-target="firmCommission"><span class="menu-icon icon-firm" aria-hidden="true"></span><span>Giro de Capital</span></button>
-          <button class="menu-item" type="button" data-view-target="sale" data-admin-only><span class="menu-icon icon-sale" aria-hidden="true"></span><span>Emprestimos</span></button>
-          <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-history" aria-hidden="true"></span><span>Parcelas</span></button>
-          <button class="menu-item" type="button" data-view-target="linePayments"><span class="menu-icon icon-sale" aria-hidden="true"></span><span>Recebimentos</span></button>
-          <button class="menu-item" type="button" data-view-target="expenses"><span class="menu-icon icon-expense" aria-hidden="true"></span><span>Despesas</span></button>
+          <button class="menu-item" type="button" data-view-target="firmCommission"><span class="menu-icon icon-firm" aria-hidden="true"></span><span class="menu-copy"><strong>Giro de Capital</strong><small>Saldo e movimentacoes</small></span></button>
+          <button class="menu-item" type="button" data-view-target="sale" data-admin-only><span class="menu-icon icon-sale" aria-hidden="true"></span><span class="menu-copy"><strong>Emprestimos</strong><small>Registrar venda</small></span></button>
+          <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Parcelas</strong><small>Acompanhamento por venda</small></span></button>
+          <button class="menu-item" type="button" data-view-target="linePayments"><span class="menu-icon icon-sale" aria-hidden="true"></span><span class="menu-copy"><strong>Recebimentos</strong><small>Folha dos vendedores</small></span></button>
+          <button class="menu-item" type="button" data-view-target="expenses"><span class="menu-icon icon-expense" aria-hidden="true"></span><span class="menu-copy"><strong>Despesas</strong><small>Lancar e pagar despesas</small></span></button>
+
           <span class="menu-section-title">Gestao</span>
-          <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-simulate" aria-hidden="true"></span><span>Relatorios</span></button>
-          <button class="menu-item" type="button" data-view-target="firmCommission"><span class="menu-icon icon-history" aria-hidden="true"></span><span>Comprovantes</span></button>
-          <button class="menu-item" type="button" data-view-target="settings" data-admin-only><span class="menu-icon icon-vendors" aria-hidden="true"></span><span>Usuarios</span></button>
-          <button class="menu-item" type="button" data-view-target="settings" data-admin-only><span class="menu-icon icon-settings" aria-hidden="true"></span><span>Configuracoes</span></button>
-          <button class="menu-item menu-logout" type="button" data-logout><span class="menu-icon icon-history" aria-hidden="true"></span><span>Sair</span></button>
+          <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-simulate" aria-hidden="true"></span><span class="menu-copy"><strong>Relatorios</strong><small>Resumo e historico</small></span></button>
+          <button class="menu-item" type="button" data-view-target="firmCommission"><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Comprovantes</strong><small>Documentos para envio</small></span></button>
+          <button class="menu-item" type="button" data-view-target="settings" data-admin-only><span class="menu-icon icon-vendors" aria-hidden="true"></span><span class="menu-copy"><strong>Usuarios</strong><small>Acessos e permissoes</small></span></button>
+          <button class="menu-item" type="button" data-view-target="settings" data-admin-only><span class="menu-icon icon-settings" aria-hidden="true"></span><span class="menu-copy"><strong>Configuracoes</strong><small>Ajustes do sistema</small></span></button>
+
+          <span class="menu-section-title">Conta</span>
+          <button class="menu-item menu-logout" type="button" data-logout><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Sair</strong><small>Encerrar acesso</small></span></button>
         </nav>
 
         <div class="menu-card">
@@ -720,6 +725,7 @@
     </dialog>
 
     <script src="./migration-data.js?v=20260624-permissoes"></script>
-    <script src="./financeiro.js?v=20260716-menu-mobile-fix"></script>
+    <script src="./financeiro.js?v=20260716-menu-mobile-vertical"></script>
   </body>
 </html>
+
