@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#070707" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="FINANCEIRO" />
+    <title>FINANCEIRO</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <link rel="icon" href="./icon-192.png" />
+    <link rel="stylesheet" href="./styles.css?v=20260709-sem-cache" />
+  </head>
+  <body>
+    <section id="loginScreen" class="login-screen">
+      <form id="loginForm" class="login-card">
+        <div class="home-logo login-logo">
+          <span>F</span>
+          <div>
+            <strong>FINANCEIRA</strong>
+            <small>Acesso restrito</small>
+          </div>
+        </div>
+        <label>
+          Usuario
+          <input id="loginUser" type="text" autocomplete="username" placeholder="Digite seu login" required />
+        </label>
+        <label>
+          Senha
+          <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Digite a senha" required />
+        </label>
+        <p id="loginError" class="login-error" aria-live="polite"></p>
+        <button class="primary-button" type="submit">Entrar</button>
+        <button id="installAppBtn" class="install-app-button hidden" type="button">Instalar aplicativo</button>
+      </form>
+    </section>
+
+    <main class="bank-app">
+      <aside class="app-menu" aria-label="Menu principal">
+        <div class="brand-block">
+          <div class="brand-mark">F</div>
+          <div>
+            <strong>FINANCEIRA</strong>
+            <span>Consignado</span>
+          </div>
+        </div>
+
+        <nav class="menu-list">
+          <button class="menu-item active" type="button" data-view-target="dashboard"><span class="menu-icon icon-home-logo">F</span><span>Dashboard</span></button>
+          <button class="menu-item" type="button" data-view-target="simulation"><span class="menu-icon icon-simulate" aria-hidden="true"></span><span>Simulacao</span></button>
+          <button class="menu-item" type="button" data-view-target="sale" data-admin-only><span class="menu-icon icon-sale" aria-hidden="true"></span><span>Nova venda</span></button>
+          <button class="menu-item" type="button" data-view-target="expenses"><span class="menu-icon icon-expense" aria-hidden="true"></span><span>Despesas</span></button>
+          <button class="menu-item" type="button" data-view-target="linePayments"><span class="menu-icon icon-vendors" aria-hidden="true"></span><span>Pag. vendedores</span></button>
+          <button class="menu-item" type="button" data-view-target="firmCommission"><span class="menu-icon icon-firm" aria-hidden="true"></span><span>Comissao firma</span></button>
+          <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-history" aria-hidden="true"></span><span>Historico</span></button>
+          <button class="menu-item" type="button" data-view-target="settings" data-admin-only><span class="menu-icon icon-settings" aria-hidden="true"></span><span>Configuracoes</span></button>
+        </nav>
+
+        <div class="menu-card">
+          <span>Saldo caixa</span>
+          <strong id="menuCashBalance">R$ 0,00</strong>
+        </div>
+      </aside>
+
+      <section class="app-main">
+        <header class="topbar">
+          <div class="topbar-brand">
+            <span class="mini-logo">F</span>
+            <div>
+              <p class="eyebrow">FINANCEIRA consignado</p>
+              <h1 id="viewTitle">Dashboard</h1>
+            </div>
+          </div>
+          <div class="topbar-actions">
+            <button id="exportCsvBtn" class="secondary-button" type="button" title="Exportar vendas e despesas para CSV">Exportar CSV</button>
+            <button id="undoResetBtn" class="ghost-button hidden" type="button" title="Desfazer ultima restauracao" data-admin-only>Desfazer restaurar</button>
+            <button id="resetDemoBtn" class="ghost-button" type="button" title="Restaurar dados de exemplo" data-admin-only>Restaurar exemplo</button>
+            <button id="logoutBtn" class="ghost-button" type="button" title="Sair do acesso">Sair</button>
+          </div>
+        </header>
+
+        <section class="app-view active" data-view="dashboard">
+          <section class="home-hero">
+            <div class="home-logo">
+              <span>F</span>
+              <div>
+                <strong>FINANCEIRA</strong>
+                <small>Controle de consignado</small>
+              </div>
+            </div>
+            <div class="home-total">
+              <span>Total vendido</span>
+              <strong id="totalSold">R$ 0,00</strong>
+            </div>
+          </section>
+
+          <section class="home-actions" aria-label="Acoes principais">
+            <button class="app-action-card primary-action" type="button" data-view-target="sale" data-admin-only>
+              <span class="action-icon icon-sale" aria-hidden="true"></span>
+              <strong>Registrar vendas</strong>
+              <small>Lancar contrato e calcular comissoes</small>
+            </button>
+            <button class="app-action-card" type="button" data-view-target="simulation">
+              <span class="action-icon icon-simulate" aria-hidden="true"></span>
+              <strong>Simular venda</strong>
+              <small>Testar formatos e vendedores</small>
+            </button>
+            <button class="app-action-card" type="button" data-view-target="linePayments">
+              <span class="action-icon icon-vendors" aria-hidden="true"></span>
+              <strong>Folha de pagamento</strong>
+              <small>Ver valores a pagar dos vendedores</small>
+            </button>
+          </section>
+
+          <section class="feed-panel" aria-label="Feed financeiro">
+            <div class="feed-heading">
+              <h2>Feed</h2>
+              <span>Resumo de caixa</span>
+            </div>
+            <div class="feed-list">
+              <article class="feed-item capital">
+                <span>Giro de capital</span>
+                <strong id="workingCapital">R$ 17.148,00</strong>
+              </article>
+              <article class="feed-item">
+                <span>Valor a pagar aos vendedores</span>
+                <strong id="payableCommission">R$ 0,00</strong>
+              </article>
+              <article class="feed-item expense">
+                <span>Despesas a pagar</span>
+                <strong id="totalExpenses">R$ 0,00</strong>
+              </article>
+              <article class="feed-item">
+                <span>Caixa firma</span>
+                <strong id="firmCash">R$ 0,00</strong>
+              </article>
+              <article class="feed-item subtotal">
+                <span>Saldo do caixa</span>
+                <strong id="cashBalance">R$ 0,00</strong>
+              </article>
+            </div>
+          </section>
+
+          <section class="weekly-report" aria-label="Relatorio semanal simplificado">
+            <div class="weekly-report-heading">
+              <div>
+                <span>Segunda a sexta</span>
+                <h2>Relatorio semanal</h2>
+              </div>
+              <strong id="weeklyPeriod">Semana atual</strong>
+            </div>
+
+            <div class="weekly-report-totals">
+              <article>
+                <span>Vendas da semana</span>
+                <strong id="weeklySalesTotal">R$ 0,00</strong>
+              </article>
+              <article>
+                <span>Despesas pagas na semana</span>
+                <strong id="weeklyExpensesTotal">R$ 0,00</strong>
+              </article>
+              <article>
+                <span>Despesas pendentes</span>
+                <strong id="weeklyPendingExpensesTotal">R$ 0,00</strong>
+              </article>
+              <article class="weekly-balance">
+                <span>Saldo simplificado</span>
+                <strong id="weeklyBalance">R$ 0,00</strong>
+              </article>
+            </div>
+
+            <div id="weeklyDailyFeed" class="weekly-daily-feed"></div>
+          </section>
+
+          <section class="summary-grid dashboard-extra" aria-label="Resumo financeiro complementar">
+            <article class="metric">
+              <span>Total firma gerado</span>
+              <strong id="netCompany">R$ 0,00</strong>
+            </article>
+            <article class="metric">
+              <span>Imposto bancario</span>
+              <strong id="totalTax">R$ 0,00</strong>
+            </article>
+            <button class="quick-card" type="button" data-view-target="expenses">
+              <strong>Despesas</strong>
+              <span>Lancar e acompanhar gastos</span>
+            </button>
+            <button class="quick-card" type="button" data-view-target="history">
+              <strong>Historico</strong>
+              <span>Consultar vendas registradas</span>
+            </button>
+          </section>
+        </section>
+
+        <section class="app-view" data-view="simulation">
+          <section class="simulation-grid">
+            <form id="simulationForm" class="panel sale-panel">
+              <div class="panel-heading">
+                <h2>Simulacao de venda</h2>
+                <span id="simulationPreview">R$ 0,00 total firma</span>
+              </div>
+              <div class="form-grid simulation-form-grid">
+                <label>
+                  Valor para simular
+                  <input id="simulationAmount" type="text" inputmode="numeric" placeholder="R$ 0,00" />
+                </label>
+                <label>
+                  Formato
+                  <select id="simulationFormat">
+                    <option value="standard">Imposto 35%</option>
+                    <option value="bank40">Imposto 40%</option>
+                    <option value="bank40Special">40% especial</option>
+                    <option value="machine">NFC</option>
+                  </select>
+                </label>
+                <label>
+                  Vendedores
+                  <select id="simulationSellers">
+                    <option value="1">1 vendedor</option>
+                    <option value="2" selected>2 vendedores</option>
+                    <option value="3">3 vendedores</option>
+                  </select>
+                </label>
+              </div>
+              <button class="primary-button simulation-button" type="submit">Simular</button>
+            </form>
+
+            <section class="panel simulation-result-panel">
+              <div class="panel-heading">
+                <h2>Resultado</h2>
+                <span>apenas simulacao</span>
+              </div>
+              <div id="simulationResult" class="simulation-result-list"></div>
+            </section>
+          </section>
+        </section>
+
+        <section class="app-view" data-view="sale" data-admin-only>
+          <form id="saleForm" class="panel sale-panel">
+            <div class="panel-heading">
+              <h2>Lancar venda</h2>
+              <span id="salePreview">R$ 0,00 total firma</span>
+            </div>
+
+            <div class="form-grid">
+              <label>
+                Valor do emprestimo
+                <input id="saleAmount" name="amount" type="text" inputmode="numeric" placeholder="R$ 0,00" required />
+              </label>
+              <label>
+                Formato de venda
+                <select id="saleFormat" name="format">
+                  <option value="standard">Imposto 35%</option>
+                  <option value="bank40">Imposto 40%</option>
+                  <option value="bank40Special">40% especial</option>
+                  <option value="machine">NFC</option>
+                </select>
+              </label>
+              <label>
+                Agente 1
+                <select id="saleAgent1" name="agentId1" required></select>
+              </label>
+              <label>
+                Agente 2
+                <select id="saleAgent2" name="agentId2" required></select>
+              </label>
+              <label>
+                Agente 3
+                <select id="saleAgent3" name="agentId3"></select>
+                <small>Ao selecionar, os 40% da comissao sao divididos igualmente entre os 3 vendedores.</small>
+              </label>
+              <label>
+                Status
+                <select id="saleStatus" name="status">
+                  <option value="Pago">Pago</option>
+                  <option value="Pendente">Pendente</option>
+                  <option value="Cancelado">Cancelado</option>
+                </select>
+              </label>
+              <label>
+                Data
+                <input id="saleDate" name="date" type="date" required />
+              </label>
+              <label>
+                Observacao
+                <input id="saleNotes" name="notes" type="text" placeholder="Contrato, banco, prazo..." />
+              </label>
+            </div>
+
+            <div class="breakdown" aria-label="Distribuicao da venda">
+              <div class="machine-field hidden"><span>Taxa NFC</span><strong id="previewMachineFee">R$ 0,00</strong></div>
+              <div><span>Desconto bancario</span><strong id="previewTax">R$ 0,00</strong></div>
+              <div class="restricted-field"><span>Caixa empresa</span><strong id="previewFirmCash">R$ 0,00</strong></div>
+              <div class="restricted-field"><span>Imposto bancario real</span><strong id="previewBankTaxNet">R$ 0,00</strong></div>
+              <div><span>Vendedor 1</span><strong id="previewLine1">R$ 0,00</strong></div>
+              <div><span>Vendedor 2</span><strong id="previewLine2">R$ 0,00</strong></div>
+              <div><span>Vendedor 3</span><strong id="previewLine3">R$ 0,00</strong></div>
+              <div><span>Firma</span><strong id="previewFirm">R$ 0,00</strong></div>
+              <div><span>Total firma</span><strong id="previewTotalFirm">R$ 0,00</strong></div>
+            </div>
+
+            <button class="primary-button" type="submit">Salvar venda</button>
+          </form>
+        </section>
+
+        <section class="app-view" data-view="expenses">
+          <section class="summary-grid expense-overview" aria-label="Resumo das despesas">
+            <article class="metric">
+              <span>Despesas a pagar</span>
+              <strong id="expensePendingTotal">R$ 0,00</strong>
+            </article>
+            <article class="metric">
+              <span>Despesas pagas</span>
+              <strong id="expensePaidTotal">R$ 0,00</strong>
+            </article>
+            <article class="metric capital">
+              <span>Saldo disponivel no caixa</span>
+              <strong id="expenseCashAvailable">R$ 0,00</strong>
+              <button id="transferCashToCapitalBtn" class="metric-action" type="button" data-admin-only>
+                Enviar sobra ao giro
+              </button>
+            </article>
+          </section>
+          <section class="expenses-grid">
+            <section class="panel">
+              <div class="panel-heading">
+                <h2>Despesas</h2>
+                <span>solicitar pagamento pelo caixa</span>
+              </div>
+              <form id="expenseForm" class="expense-form" data-admin-only>
+                <label>
+                  Data
+                  <input id="expenseDate" type="date" required />
+                </label>
+                <label>
+                  Descricao
+                  <input id="expenseDescription" type="text" placeholder="Aluguel, sistema, trafego..." required />
+                </label>
+                <label>
+                  Valor
+                  <input id="expenseAmount" type="text" inputmode="numeric" placeholder="R$ 0,00" required />
+                </label>
+                <button class="secondary-button" type="submit">Adicionar despesa</button>
+              </form>
+            </section>
+
+            <section class="panel table-panel">
+              <div class="panel-heading">
+                <h2>Solicitacoes e pagamentos</h2>
+                <span id="expenseCount">0 registros</span>
+              </div>
+              <div class="bank-statement" id="expensesTable"></div>
+            </section>
+          </section>
+        </section>
+
+        <section class="app-view" data-view="linePayments">
+          <section class="summary-grid compact-summary" aria-label="Resumo de pagamento dos vendedores">
+            <article class="metric">
+              <span>Total Vendedor 1</span>
+              <strong id="line1Total">R$ 0,00</strong>
+            </article>
+            <article class="metric">
+              <span>Total Vendedor 2</span>
+              <strong id="line2Total">R$ 0,00</strong>
+            </article>
+            <article class="metric">
+              <span>Total Vendedor 3</span>
+              <strong id="line3Total">R$ 0,00</strong>
+            </article>
+            <article class="metric">
+              <span>Total a pagar</span>
+              <strong id="linePayTotal">R$ 0,00</strong>
+            </article>
+          </section>
+
+          <section class="panel table-panel">
+            <div class="panel-heading">
+              <h2>Historico para envio ao vendedor</h2>
+              <span id="linePaymentCount">0 agentes</span>
+            </div>
+            <div class="payment-card-list" id="linePaymentsTable"></div>
+          </section>
+        </section>
+
+        <section class="app-view" data-view="firmCommission">
+          <section class="firm-receipt-actions" aria-label="Comprovante da firma">
+            <div>
+              <span>Conferencia completa</span>
+              <strong>Comprovante financeiro da firma</strong>
+            </div>
+            <div>
+              <button id="downloadFirmReceiptBtn" class="secondary-button" type="button">Baixar comprovante</button>
+              <button id="printFirmReceiptBtn" class="primary-button" type="button">Imprimir comprovante</button>
+            </div>
+          </section>
+
+          <section class="summary-grid compact-summary" aria-label="Resumo da firma">
+            <article class="metric capital">
+              <span>Giro de capital</span>
+              <strong id="firmWorkingCapital">R$ 17.148,00</strong>
+            </article>
+            <article class="metric">
+              <span>Sobra firma disponivel</span>
+              <strong id="firmRemainderTotal">R$ 0,00</strong>
+            </article>
+            <article class="metric">
+              <span>Pro-labore MM</span>
+              <strong id="firmProlaboreMM">R$ 0,00</strong>
+            </article>
+            <article class="metric">
+              <span>Pro-labore FORT</span>
+              <strong id="firmProlaboreFort">R$ 0,00</strong>
+            </article>
+            <article class="metric">
+              <span>Caixa firma</span>
+              <strong id="firmCashDetailTotal">R$ 0,00</strong>
+            </article>
+            <article class="metric">
+              <span>Despesas a pagar</span>
+              <strong id="firmExpenseTotal">R$ 0,00</strong>
+            </article>
+            <article class="metric">
+              <span>Despesas pagas</span>
+              <strong id="firmPaidExpenseTotal">R$ 0,00</strong>
+            </article>
+            <article class="metric">
+              <span>Saldo caixa apos pagamentos</span>
+              <strong id="firmCashBalanceDetail">R$ 0,00</strong>
+            </article>
+            <article class="metric">
+              <span>Total firma gerado</span>
+              <strong id="firmCommissionTotal">R$ 0,00</strong>
+            </article>
+          </section>
+
+          <section class="treasury-panel panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Destinacao da sobra da firma</h2>
+                <span>Pro-labore dos socios e giro de capital</span>
+              </div>
+              <strong id="firmAvailableAllocation">Disponivel R$ 0,00</strong>
+            </div>
+            <div class="capital-goal">
+              <div>
+                <span>Meta do giro de capital</span>
+                <strong id="capitalGoalStatus">R$ 0,00 de R$ 25.000,00</strong>
+              </div>
+              <div class="capital-progress-track"><span id="capitalProgressBar"></span></div>
+              <small id="capitalGoalRemaining">Faltam R$ 25.000,00</small>
+            </div>
+            <form id="firmAllocationForm" class="firm-allocation-form" data-admin-only>
+              <label>Destino
+                <select id="firmAllocationType" required>
+                  <option value="prolabore_mm">Pro-labore MM</option>
+                  <option value="prolabore_fort">Pro-labore FORT</option>
+                  <option value="working_capital">Giro de capital</option>
+                </select>
+              </label>
+              <label>Valor
+                <input id="firmAllocationAmount" type="text" inputmode="numeric" placeholder="R$ 0,00" required />
+              </label>
+              <label>Data
+                <input id="firmAllocationDate" type="date" required />
+              </label>
+              <label>Observacao
+                <input id="firmAllocationNotes" type="text" placeholder="Motivo ou referencia..." />
+              </label>
+              <button class="primary-button" type="submit">Confirmar destinacao</button>
+            </form>
+            <div id="firmAllocationHistory" class="allocation-history"></div>
+          </section>
+
+          <section class="firm-detail-grid">
+            <section class="panel firm-panel">
+              <div class="panel-heading">
+                <h2>Detalhe da comissao da firma</h2>
+                <span id="firmSaleCount">0 vendas</span>
+              </div>
+              <div id="firmCommissionCards" class="firm-card-list"></div>
+            </section>
+
+            <section class="panel firm-panel">
+              <div class="panel-heading">
+                <h2>Detalhe das despesas</h2>
+                <span id="firmExpenseCount">0 registros</span>
+              </div>
+              <div id="firmExpensesCards" class="expense-card-list"></div>
+            </section>
+
+            <section class="panel firm-panel firm-work-panel">
+              <div class="panel-heading">
+                <h2>Vendas realizadas</h2>
+                <span><strong id="firmWorkCount">0</strong> vendas</span>
+              </div>
+              <div class="firm-work-total">
+                <span>Total da sobra da firma</span>
+                <strong id="firmWorkTotal">R$ 0,00</strong>
+              </div>
+              <div id="firmWorkCards" class="firm-work-list"></div>
+            </section>
+          </section>
+        </section>
+
+        <section class="app-view" data-view="history">
+          <section class="panel history-panel">
+            <div class="panel-heading">
+              <h2>Vendas</h2>
+              <div class="history-filters">
+                <select id="weekArchiveFilter" title="Escolher semana">
+                  <option value="current">Semana atual</option>
+                </select>
+                <select id="statusFilter" title="Filtrar por status">
+                  <option value="Todos">Todos</option>
+                  <option value="Pago">Pago</option>
+                  <option value="Pendente">Pendente</option>
+                  <option value="Cancelado">Cancelado</option>
+                </select>
+              </div>
+            </div>
+            <div class="history-format-totals" aria-label="Total vendido por formato">
+              <article>
+                <span>Imposto 35%</span>
+                <strong id="historyStandardTotal">R$ 0,00</strong>
+              </article>
+              <article>
+                <span>Imposto 40%</span>
+                <strong id="historyBank40Total">R$ 0,00</strong>
+              </article>
+              <article>
+                <span>40% especial</span>
+                <strong id="historyBank40SpecialTotal">R$ 0,00</strong>
+              </article>
+              <article>
+                <span>NFC</span>
+                <strong id="historyMachineTotal">R$ 0,00</strong>
+              </article>
+            </div>
+            <section class="firm-cash-history-card" aria-label="Resumo da caixa da firma">
+              <div class="firm-cash-history-heading">
+                <div>
+                  <span>Caixa da firma</span>
+                  <h3>Entradas por venda</h3>
+                </div>
+                <strong id="historyFirmCashTotal">R$ 0,00</strong>
+              </div>
+              <div id="historyFirmCashList" class="firm-cash-history-list"></div>
+            </section>
+            <section class="proof-card" aria-label="Prova real do financeiro">
+              <div class="proof-card-heading">
+                <div>
+                  <span>Conferencia geral</span>
+                  <h3>Prova real</h3>
+                </div>
+                <strong id="proofStatus">Valores conferidos</strong>
+              </div>
+              <div class="proof-card-list">
+                <div class="proof-entry"><span>Valor de entrada</span><strong id="proofEntry">R$ 0,00</strong></div>
+                <div><span>Saida imposto</span><strong id="proofTax">R$ 0,00</strong></div>
+                <div><span>Saida folha</span><strong id="proofPayroll">R$ 0,00</strong></div>
+                <div><span>Saida gasto</span><strong id="proofExpenses">R$ 0,00</strong></div>
+                <div><span>Saida caixa</span><strong id="proofCash">R$ 0,00</strong></div>
+                <div><span>Sobra firma</span><strong id="proofFirm">R$ 0,00</strong></div>
+              </div>
+              <div class="proof-card-total">
+                <span>Total distribuido</span>
+                <strong id="proofDistributed">R$ 0,00</strong>
+              </div>
+              <div class="proof-difference">
+                <span>Diferenca</span>
+                <strong id="proofDifference">R$ 0,00</strong>
+              </div>
+            </section>
+            <div class="weekly-close" data-admin-only>
+              <div>
+                <strong>Fechamento semanal</strong>
+                <span>Apaga definitivamente todas as vendas e despesas. Nao existe recuperacao.</span>
+              </div>
+              <button id="deleteAllRecordsBtn" type="button">Apagar tudo definitivamente</button>
+            </div>
+            <button id="recoverDeletedSalesBtn" class="secondary-button recover-sales-button" type="button" data-admin-only>
+              Recuperar vendas apagadas
+            </button>
+            <div id="salesCards" class="history-card-list"></div>
+          </section>
+        </section>
+
+        <section class="app-view" data-view="settings" data-admin-only>
+          <div class="settings-layout">
+          <section class="panel agent-settings-panel">
+            <div class="panel-heading settings-heading">
+              <div>
+                <span class="section-kicker">Equipe</span>
+                <h2>Agentes</h2>
+              </div>
+              <span id="agentCount">0 ativos</span>
+            </div>
+            <form id="agentForm" class="agent-form">
+              <label>
+                Nome do agente
+                <input id="agentName" type="text" placeholder="Digite o nome" required />
+              </label>
+              <label>
+                Posicao
+                <select id="agentSector" required>
+                  <option value="1 Linha">Vendedor 1</option>
+                  <option value="2 Linha">Vendedor 2</option>
+                  <option value="3 Linha">Vendedor 3</option>
+                </select>
+              </label>
+              <button class="secondary-button agent-add-button" type="submit">Adicionar agente</button>
+            </form>
+            <div id="agentsList" class="agent-list settings-agent-list"></div>
+          </section>
+
+          <aside class="panel settings-panel">
+            <div class="panel-heading">
+              <h2>Percentuais</h2>
+              <span>editavel</span>
+            </div>
+            <form id="settingsForm" class="rates-grid">
+              <label>Imposto bancario <input id="bankTaxRate" type="number" min="0" step="0.01" /></label>
+              <label>Caixa firma <input id="firmCashRate" type="number" min="0" step="0.01" /></label>
+              <label>Linha geral <input type="number" value="40" disabled /></label>
+              <label>Comissao vendedor 1 <input id="line1Rate" type="number" value="15" disabled /></label>
+              <label>Comissao vendedor 2 <input id="line2Rate" type="number" value="25" disabled /></label>
+              <label class="hidden">Regra antiga vendedor 2 <input id="line2With3Rate" type="number" min="0" step="0.01" /></label>
+              <label class="hidden">Regra antiga vendedor 3 <input id="line3Rate" type="number" min="0" step="0.01" /></label>
+              <label>Comissao total com 3 vendedores <input type="number" value="40" disabled /></label>
+            </form>
+          </aside>
+          </div>
+        </section>
+      </section>
+
+      <nav class="mobile-menu" aria-label="Menu inferior">
+        <button class="menu-item active" type="button" data-view-target="dashboard"><span class="menu-icon icon-home-logo">F</span><span>Inicio</span></button>
+        <button class="menu-item" type="button" data-view-target="simulation"><span class="menu-icon icon-simulate" aria-hidden="true"></span><span>Simular</span></button>
+        <button class="menu-item" type="button" data-view-target="sale" data-admin-only><span class="menu-icon icon-sale" aria-hidden="true"></span><span>Venda</span></button>
+        <button class="menu-item" type="button" data-view-target="expenses"><span class="menu-icon icon-expense" aria-hidden="true"></span><span>Despesas</span></button>
+        <button class="menu-item" type="button" data-view-target="linePayments"><span class="menu-icon icon-vendors" aria-hidden="true"></span><span>Vendedores</span></button>
+        <button class="menu-item" type="button" data-view-target="firmCommission"><span class="menu-icon icon-firm" aria-hidden="true"></span><span>Firma</span></button>
+        <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-history" aria-hidden="true"></span><span>Historico</span></button>
+        <button class="menu-item" type="button" data-view-target="settings" data-admin-only><span class="menu-icon icon-settings" aria-hidden="true"></span><span>Config.</span></button>
+      </nav>
+    </main>
+
+    <template id="agentRowTemplate">
+      <div class="agent-row">
+        <div class="agent-identity">
+          <span class="agent-avatar" aria-hidden="true"></span>
+          <div>
+            <strong></strong>
+            <span></span>
+          </div>
+        </div>
+        <div class="agent-actions">
+          <button class="agent-edit-button" type="button" title="Editar agente">Editar</button>
+          <button class="agent-delete-button" type="button" title="Excluir agente">Excluir</button>
+        </div>
+      </div>
+    </template>
+
+    <dialog id="agentEditDialog" class="agent-edit-dialog">
+      <form id="agentEditForm" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <span class="section-kicker">Cadastro</span>
+            <h2>Editar agente</h2>
+          </div>
+          <button id="agentEditCancelTop" class="dialog-close" type="button" aria-label="Fechar">X</button>
+        </div>
+        <input id="agentEditId" type="hidden" />
+        <label>
+          Nome do agente
+          <input id="agentEditName" type="text" required />
+        </label>
+        <label>
+          Posicao
+          <select id="agentEditSector" required>
+            <option value="1 Linha">Vendedor 1</option>
+            <option value="2 Linha">Vendedor 2</option>
+            <option value="3 Linha">Vendedor 3</option>
+          </select>
+        </label>
+        <div class="dialog-actions">
+          <button id="agentEditCancel" class="ghost-button" type="button">Cancelar</button>
+          <button class="secondary-button" type="submit">Salvar alteracoes</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="./migration-data.js?v=20260624-permissoes"></script>
+    <script src="./app.js?v=20260709-sem-cache"></script>
+  </body>
+</html>

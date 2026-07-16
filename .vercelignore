@@ -1,0 +1,6 @@
+recovery-state.js
+server.js
+server-8766.js
+*.log
+.vercel
+node_modules
