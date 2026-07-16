@@ -36,8 +36,9 @@ const MOTIVATIONAL_MESSAGES = [
 let lastMotivationalMessage = "";
 const USERS = {
   universo: { password: "@universo00", role: "socio_adm", label: "Socio ADM" },
-  mm: { password: "@Universo", role: "socio_mm", label: "Socio MM" },
+  mm: { password: "@Universo777", role: "socio_mm", label: "Socio MM" },
   financeiro: { password: "@Financeiro00", role: "financeiro" },
+  wg: { password: "@wg01", role: "visualizador", label: "Visualizador" },
 };
 const SALE_FORMATS = {
   standard: "Imposto 35%",
@@ -475,7 +476,8 @@ function setLoggedView() {
 
 function login(user, password) {
   const normalizedUser = String(user || "").trim().toLowerCase();
-  if (!USERS[normalizedUser] || USERS[normalizedUser].password !== password) return false;
+  const normalizedPassword = String(password || "").trim();
+  if (!USERS[normalizedUser] || USERS[normalizedUser].password !== normalizedPassword) return false;
   sessionStorage.setItem(SESSION_KEY, normalizedUser);
   return true;
 }
