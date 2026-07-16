@@ -11,7 +11,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <link rel="icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260716-app-celular" />
+    <link rel="stylesheet" href="./styles.css?v=20260716-sidebar-bank" />
   </head>
   <body>
     <section id="loginScreen" class="login-screen">
@@ -46,19 +46,26 @@
           <div class="brand-mark">F</div>
           <div>
             <strong>FINANCEIRA</strong>
-            <span>Consignado</span>
+            <span>Banco de consignado</span>
           </div>
+          <button id="closeMenuBtn" class="menu-close-button" type="button" aria-label="Fechar menu">X</button>
         </div>
 
         <nav class="menu-list">
+          <span class="menu-section-title">Operacao</span>
           <button class="menu-item active" type="button" data-view-target="dashboard"><span class="menu-icon icon-home-logo">F</span><span>Dashboard</span></button>
-          <button class="menu-item" type="button" data-view-target="simulation"><span class="menu-icon icon-simulate" aria-hidden="true"></span><span>Simulacao</span></button>
-          <button class="menu-item" type="button" data-view-target="sale" data-admin-only><span class="menu-icon icon-sale" aria-hidden="true"></span><span>Nova venda</span></button>
+          <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-vendors" aria-hidden="true"></span><span>Clientes</span></button>
+          <button class="menu-item" type="button" data-view-target="firmCommission"><span class="menu-icon icon-firm" aria-hidden="true"></span><span>Giro de Capital</span></button>
+          <button class="menu-item" type="button" data-view-target="sale" data-admin-only><span class="menu-icon icon-sale" aria-hidden="true"></span><span>Emprestimos</span></button>
+          <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-history" aria-hidden="true"></span><span>Parcelas</span></button>
+          <button class="menu-item" type="button" data-view-target="linePayments"><span class="menu-icon icon-sale" aria-hidden="true"></span><span>Recebimentos</span></button>
           <button class="menu-item" type="button" data-view-target="expenses"><span class="menu-icon icon-expense" aria-hidden="true"></span><span>Despesas</span></button>
-          <button class="menu-item" type="button" data-view-target="linePayments"><span class="menu-icon icon-vendors" aria-hidden="true"></span><span>Pag. vendedores</span></button>
-          <button class="menu-item" type="button" data-view-target="firmCommission"><span class="menu-icon icon-firm" aria-hidden="true"></span><span>Comissao firma</span></button>
-          <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-history" aria-hidden="true"></span><span>Historico</span></button>
+          <span class="menu-section-title">Gestao</span>
+          <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-simulate" aria-hidden="true"></span><span>Relatorios</span></button>
+          <button class="menu-item" type="button" data-view-target="firmCommission"><span class="menu-icon icon-history" aria-hidden="true"></span><span>Comprovantes</span></button>
+          <button class="menu-item" type="button" data-view-target="settings" data-admin-only><span class="menu-icon icon-vendors" aria-hidden="true"></span><span>Usuarios</span></button>
           <button class="menu-item" type="button" data-view-target="settings" data-admin-only><span class="menu-icon icon-settings" aria-hidden="true"></span><span>Configuracoes</span></button>
+          <button class="menu-item menu-logout" type="button" data-logout><span class="menu-icon icon-history" aria-hidden="true"></span><span>Sair</span></button>
         </nav>
 
         <div class="menu-card">
@@ -66,10 +73,16 @@
           <strong id="menuCashBalance">R$ 0,00</strong>
         </div>
       </aside>
+      <div id="menuOverlay" class="menu-overlay" aria-hidden="true"></div>
 
       <section class="app-main">
         <header class="topbar">
           <div class="topbar-brand">
+            <button id="menuToggleBtn" class="hamburger-button" type="button" aria-label="Abrir menu">
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
             <span class="mini-logo">F</span>
             <div>
               <p class="eyebrow">FINANCEIRA consignado</p>
@@ -701,6 +714,6 @@
     </dialog>
 
     <script src="./migration-data.js?v=20260624-permissoes"></script>
-    <script src="./financeiro.js?v=20260716-app-celular"></script>
+    <script src="./financeiro.js?v=20260716-sidebar-bank"></script>
   </body>
 </html>

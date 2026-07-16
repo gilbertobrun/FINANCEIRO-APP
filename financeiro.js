@@ -110,6 +110,10 @@ const el = {
   loginError: document.querySelector("#loginError"),
   installAppBtn: document.querySelector("#installAppBtn"),
   bankApp: document.querySelector(".bank-app"),
+  appMenu: document.querySelector(".app-menu"),
+  menuOverlay: document.querySelector("#menuOverlay"),
+  menuToggleBtn: document.querySelector("#menuToggleBtn"),
+  closeMenuBtn: document.querySelector("#closeMenuBtn"),
   totalSold: document.querySelector("#totalSold"),
   netCompany: document.querySelector("#netCompany"),
   firmCash: document.querySelector("#firmCash"),
@@ -461,6 +465,11 @@ function isAdmin() {
 
 function canManagePayments() {
   return isAdmin() || currentRole() === "financeiro";
+}
+
+function setMobileMenu(open) {
+  el.bankApp.classList.toggle("menu-open", Boolean(open));
+  el.menuToggleBtn?.setAttribute("aria-expanded", String(Boolean(open)));
 }
 
 function setLoggedView() {
@@ -3191,8 +3200,15 @@ el.simulationForm.addEventListener("submit", (event) => {
   input.addEventListener("blur", () => formatCurrencyInput(input));
 });
 document.querySelectorAll("[data-view-target]").forEach((button) => {
-  button.addEventListener("click", () => setActiveView(button.dataset.viewTarget));
+  button.addEventListener("click", () => {
+    setActiveView(button.dataset.viewTarget);
+    setMobileMenu(false);
+  });
 });
+document.querySelectorAll("[data-logout]").forEach((button) => button.addEventListener("click", logout));
+el.menuToggleBtn?.addEventListener("click", () => setMobileMenu(!el.bankApp.classList.contains("menu-open")));
+el.closeMenuBtn?.addEventListener("click", () => setMobileMenu(false));
+el.menuOverlay?.addEventListener("click", () => setMobileMenu(false));
 el.statusFilter.addEventListener("change", renderSales);
 el.weekArchiveFilter.addEventListener("change", renderSales);
 el.exportCsvBtn.addEventListener("click", exportCsv);

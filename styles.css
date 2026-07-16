@@ -4392,3 +4392,237 @@ h2 {
     color: #f8dd82 !important;
   }
 }
+
+/* Etapa 1 - arquitetura visual premium tipo app bancario */
+.menu-overlay,
+.menu-close-button,
+.hamburger-button {
+  display: none;
+}
+
+.bank-app {
+  grid-template-columns: 288px minmax(0, 1fr);
+}
+
+.app-menu {
+  border-right: 1px solid rgba(242, 205, 115, 0.16);
+  background:
+    linear-gradient(150deg, rgba(242, 205, 115, 0.13), transparent 28%),
+    linear-gradient(180deg, #111 0%, #070707 52%, #000 100%) !important;
+  box-shadow: 22px 0 60px rgba(0, 0, 0, 0.32);
+}
+
+.brand-block {
+  align-items: center;
+  min-height: 74px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(242, 205, 115, 0.12);
+}
+
+.brand-mark {
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 30% 20%, #fff0b8, transparent 28%),
+    linear-gradient(145deg, #f5d372, #d6a94f) !important;
+}
+
+.brand-block strong {
+  color: #fff8df;
+  font-size: 20px;
+}
+
+.brand-block span {
+  color: #c9b987;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.menu-section-title {
+  margin: 10px 4px 2px;
+  color: #8f805b;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.menu-list {
+  gap: 7px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.menu-item {
+  min-height: 46px;
+  border-color: transparent !important;
+  border-radius: 14px !important;
+  background: transparent !important;
+  color: #d9ceb0 !important;
+  box-shadow: none !important;
+}
+
+.menu-item span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-item.active,
+.menu-item:hover {
+  background: linear-gradient(145deg, rgba(242, 205, 115, 0.18), rgba(242, 205, 115, 0.06)) !important;
+  color: #fff7df !important;
+  transform: none !important;
+  box-shadow: inset 0 0 0 1px rgba(242, 205, 115, 0.22) !important;
+}
+
+.menu-item.active::before,
+.menu-item:hover::before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  width: 4px;
+  height: 24px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe596, #d6a94f);
+}
+
+.menu-icon {
+  border-radius: 13px !important;
+  background: rgba(242, 205, 115, 0.1) !important;
+  color: #e7c56b !important;
+}
+
+.menu-item.active .menu-icon,
+.menu-item:hover .menu-icon {
+  background: linear-gradient(145deg, #f5d372, #d6a94f) !important;
+  color: #050505 !important;
+}
+
+.menu-logout {
+  margin-top: 8px;
+  color: #ffb7b7 !important;
+}
+
+.menu-card {
+  border: 1px solid rgba(242, 205, 115, 0.2);
+  border-radius: 20px;
+  padding: 15px;
+  background:
+    linear-gradient(145deg, rgba(242, 205, 115, 0.12), rgba(255, 255, 255, 0.035)),
+    #090909;
+}
+
+.menu-card span {
+  color: #cbbb8c;
+  font-weight: 800;
+}
+
+.menu-card strong {
+  margin-top: 6px;
+  color: #fff3cd;
+  font-size: 22px;
+}
+
+.hamburger-button {
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(242, 205, 115, 0.24);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.hamburger-button span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  margin: 2px 0;
+  border-radius: 999px;
+  background: #f5d372;
+}
+
+@media (max-width: 720px) {
+  .bank-app {
+    display: block !important;
+    min-height: 100dvh;
+  }
+
+  .hamburger-button,
+  .menu-close-button {
+    display: inline-flex;
+  }
+
+  .app-menu {
+    position: fixed !important;
+    inset: 0 auto 0 0;
+    z-index: 50;
+    width: min(86vw, 342px);
+    height: 100dvh;
+    grid-template-rows: auto 1fr auto;
+    padding: calc(16px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom));
+    transform: translateX(-104%);
+    transition: transform 0.24s ease;
+  }
+
+  .bank-app.menu-open .app-menu {
+    transform: translateX(0);
+  }
+
+  .menu-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    display: block;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0);
+    transition: background 0.22s ease;
+  }
+
+  .bank-app.menu-open .menu-overlay {
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.64);
+    backdrop-filter: blur(7px);
+  }
+
+  .menu-close-button {
+    margin-left: auto;
+    width: 38px;
+    height: 38px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(242, 205, 115, 0.26);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    color: #f5d372;
+    font-weight: 900;
+  }
+
+  .app-main {
+    padding: 0 10px calc(24px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .topbar {
+    border-radius: 0 0 22px 22px !important;
+  }
+
+  .topbar-brand {
+    gap: 8px;
+  }
+
+  .mobile-menu {
+    display: none !important;
+  }
+
+  .home-actions {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .app-action-card.primary-action {
+    grid-column: 1 / -1;
+  }
+
+  .dashboard-extra {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
