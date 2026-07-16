@@ -11,7 +11,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <link rel="icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260716-menu-mobile-vertical" />
+    <link rel="stylesheet" href="./styles.css?v=20260716-capital-settings" />
   </head>
   <body>
     <section id="loginScreen" class="login-screen">
@@ -68,6 +68,7 @@
           <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Parcelas</strong><small>Acompanhamento por venda</small></span></button>
           <button class="menu-item" type="button" data-view-target="linePayments"><span class="menu-icon icon-sale" aria-hidden="true"></span><span class="menu-copy"><strong>Recebimentos</strong><small>Folha dos vendedores</small></span></button>
           <button class="menu-item" type="button" data-view-target="expenses"><span class="menu-icon icon-expense" aria-hidden="true"></span><span class="menu-copy"><strong>Despesas</strong><small>Lancar e pagar despesas</small></span></button>
+          <button class="menu-item" type="button" data-view-target="capitalSettings" data-admin-only><span class="menu-icon icon-settings" aria-hidden="true"></span><span class="menu-copy"><strong>Edicao de Giro de Capital e Meta</strong><small>Capital, meta e historico</small></span></button>
 
           <span class="menu-section-title">Gestao</span>
           <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-simulate" aria-hidden="true"></span><span class="menu-copy"><strong>Relatorios</strong><small>Resumo e historico</small></span></button>
@@ -536,6 +537,76 @@
           </section>
         </section>
 
+        <section class="app-view" data-view="capitalSettings" data-admin-only>
+          <div class="admin-page-heading">
+            <div>
+              <span class="section-kicker">Administrativo</span>
+              <h2>Edicao de Giro de Capital e Meta</h2>
+              <p>Atualize o giro atual e a meta financeira com justificativa e registro de auditoria.</p>
+            </div>
+          </div>
+
+          <section class="capital-settings-grid">
+            <article class="panel capital-edit-card">
+              <div class="panel-heading">
+                <div>
+                  <span>Giro de Capital Atual</span>
+                  <h2 id="capitalSettingsCurrent">R$ 0,00</h2>
+                </div>
+                <strong id="capitalSettingsUpdatedBy">Sem atualizacao</strong>
+              </div>
+              <small id="capitalSettingsUpdatedAt" class="capital-update-meta">Data nao informada</small>
+              <form id="capitalTurnoverForm" class="capital-admin-form">
+                <label>Novo valor
+                  <input id="capitalTurnoverInput" type="text" inputmode="numeric" placeholder="R$ 0,00" required />
+                </label>
+                <label>Motivo da alteracao
+                  <textarea id="capitalTurnoverReason" rows="3" minlength="5" placeholder="Ex: Correcao de capital disponivel" required></textarea>
+                </label>
+                <button id="capitalTurnoverSaveBtn" class="primary-button" type="submit">Salvar alteracao</button>
+              </form>
+            </article>
+
+            <article class="panel capital-edit-card">
+              <div class="panel-heading">
+                <div>
+                  <span>Meta Atual</span>
+                  <h2 id="capitalGoalCurrent">R$ 0,00</h2>
+                </div>
+                <strong id="capitalGoalPercent">0%</strong>
+              </div>
+              <div class="capital-goal">
+                <div>
+                  <span>Atingido</span>
+                  <strong id="capitalGoalDetail">R$ 0,00 de R$ 0,00</strong>
+                </div>
+                <div class="capital-progress-track"><span id="capitalSettingsProgressBar"></span></div>
+                <small id="capitalSettingsRemaining">Informe uma meta para acompanhar.</small>
+              </div>
+              <form id="capitalGoalForm" class="capital-admin-form">
+                <label>Nova meta
+                  <input id="capitalGoalInput" type="text" inputmode="numeric" placeholder="R$ 0,00" required />
+                </label>
+                <label>Motivo da alteracao
+                  <textarea id="capitalGoalReason" rows="3" minlength="5" placeholder="Ex: Ajuste da meta mensal" required></textarea>
+                </label>
+                <button id="capitalGoalSaveBtn" class="primary-button" type="submit">Salvar meta</button>
+              </form>
+            </article>
+          </section>
+
+          <section class="panel capital-history-panel">
+            <div class="panel-heading">
+              <div>
+                <span>Auditoria</span>
+                <h2>Historico de alteracoes</h2>
+              </div>
+              <span id="capitalHistoryCount">0 registros</span>
+            </div>
+            <div id="capitalChangeHistory" class="capital-change-history"></div>
+          </section>
+        </section>
+
         <section class="app-view" data-view="history">
           <section class="panel history-panel">
             <div class="panel-heading">
@@ -725,7 +796,7 @@
     </dialog>
 
     <script src="./migration-data.js?v=20260624-permissoes"></script>
-    <script src="./financeiro.js?v=20260716-menu-mobile-vertical"></script>
+    <script src="./financeiro.js?v=20260716-capital-settings"></script>
   </body>
 </html>
 

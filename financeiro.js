@@ -5,7 +5,7 @@ const STORE_KEY = "financeiro-consignado-v1";
 const BACKUP_KEY = "financeiro-consignado-backup-v1";
 const DELETED_SALES_KEY = "financeiro-consignado-vendas-apagadas-v1";
 const SESSION_KEY = "financeiro-consignado-session-v1";
-const DATA_VERSION = 10;
+const DATA_VERSION = 11;
 const SUPABASE_URL = "https://ziennndoyekvguymsbap.supabase.co";
 const SUPABASE_KEY = "sb_publishable_aWQWtwt359ZHxHD0uf4HKQ_Sjilej57";
 const SUPABASE_STATE_ENDPOINT = `${SUPABASE_URL}/rest/v1/financeiro_app_state`;
@@ -51,6 +51,8 @@ const defaults = {
   dataVersion: DATA_VERSION,
   weeklyClosedAt: null,
   workingCapitalBalance: WORKING_CAPITAL,
+  capitalGoal: WORKING_CAPITAL_GOAL,
+  capitalChangeHistory: [],
   weekArchives: [],
   firmAllocations: [],
   settings: {
@@ -212,6 +214,24 @@ const el = {
   capitalGoalStatus: document.querySelector("#capitalGoalStatus"),
   capitalGoalRemaining: document.querySelector("#capitalGoalRemaining"),
   capitalProgressBar: document.querySelector("#capitalProgressBar"),
+  capitalSettingsCurrent: document.querySelector("#capitalSettingsCurrent"),
+  capitalSettingsUpdatedBy: document.querySelector("#capitalSettingsUpdatedBy"),
+  capitalSettingsUpdatedAt: document.querySelector("#capitalSettingsUpdatedAt"),
+  capitalTurnoverForm: document.querySelector("#capitalTurnoverForm"),
+  capitalTurnoverInput: document.querySelector("#capitalTurnoverInput"),
+  capitalTurnoverReason: document.querySelector("#capitalTurnoverReason"),
+  capitalTurnoverSaveBtn: document.querySelector("#capitalTurnoverSaveBtn"),
+  capitalGoalForm: document.querySelector("#capitalGoalForm"),
+  capitalGoalInput: document.querySelector("#capitalGoalInput"),
+  capitalGoalReason: document.querySelector("#capitalGoalReason"),
+  capitalGoalSaveBtn: document.querySelector("#capitalGoalSaveBtn"),
+  capitalGoalCurrent: document.querySelector("#capitalGoalCurrent"),
+  capitalGoalPercent: document.querySelector("#capitalGoalPercent"),
+  capitalGoalDetail: document.querySelector("#capitalGoalDetail"),
+  capitalSettingsProgressBar: document.querySelector("#capitalSettingsProgressBar"),
+  capitalSettingsRemaining: document.querySelector("#capitalSettingsRemaining"),
+  capitalHistoryCount: document.querySelector("#capitalHistoryCount"),
+  capitalChangeHistory: document.querySelector("#capitalChangeHistory"),
   firmAllocationForm: document.querySelector("#firmAllocationForm"),
   firmAllocationType: document.querySelector("#firmAllocationType"),
   firmAllocationAmount: document.querySelector("#firmAllocationAmount"),
@@ -254,6 +274,7 @@ const viewTitles = {
   linePayments: "Pagamento dos vendedores",
   firmCommission: "Comissao firma",
   history: "Historico",
+  capitalSettings: "Edicao de Giro e Meta",
   settings: "Configuracoes",
 };
 
@@ -296,6 +317,18 @@ function loadState() {
       dataVersion: Number(parsed.dataVersion || 0),
       weeklyClosedAt: parsed.weeklyClosedAt || null,
       workingCapitalBalance: Math.max(0, Number(parsed.workingCapitalBalance ?? 0)),
+      capitalGoal: Math.max(0, Number(parsed.capitalGoal ?? WORKING_CAPITAL_GOAL)),
+      capitalChangeHistory: Array.isArray(parsed.capitalChangeHistory)
+        ? parsed.capitalChangeHistory.map((entry) => ({
+            id: entry.id || crypto.randomUUID(),
+            changeType: entry.changeType === "capital_goal" ? "capital_goal" : "capital_turnover",
+            previousValue: Math.max(0, Number(entry.previousValue || 0)),
+            newValue: Math.max(0, Number(entry.newValue || 0)),
+            reason: String(entry.reason || "Sem justificativa"),
+            changedBy: entry.changedBy || "sistema",
+            changedAt: entry.changedAt || new Date().toISOString(),
+          }))
+        : [],
       weekArchives: Array.isArray(parsed.weekArchives)
         ? parsed.weekArchives.map((archive) => ({
             ...archive,
@@ -467,6 +500,46 @@ function isAdmin() {
 
 function canManagePayments() {
   return isAdmin() || currentRole() === "financeiro";
+}
+
+function moneyValue(value) {
+  return Math.round(Math.max(0, Number(value || 0)) * 100) / 100;
+}
+
+function getCapitalGoal() {
+  return moneyValue(state.capitalGoal ?? WORKING_CAPITAL_GOAL);
+}
+
+function currentUserLabel() {
+  const key = currentSession();
+  return USERS[key]?.label || (key ? key.toUpperCase() : "Sistema");
+}
+
+function formatDateTime(value) {
+  if (!value) return "Data nao informada";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Data nao informada";
+  return date.toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
+function capitalChangeLabel(type) {
+  return type === "capital_goal" ? "Meta financeira" : "Giro de capital";
+}
+
+function recordCapitalChange(changeType, previousValue, newValue, reason) {
+  state.capitalChangeHistory = Array.isArray(state.capitalChangeHistory) ? state.capitalChangeHistory : [];
+  state.capitalChangeHistory.unshift({
+    id: crypto.randomUUID(),
+    changeType,
+    previousValue: moneyValue(previousValue),
+    newValue: moneyValue(newValue),
+    reason: String(reason || "").trim(),
+    changedBy: currentSession() || "sistema",
+    changedAt: new Date().toISOString(),
+  });
 }
 
 function setMobileMenu(open) {
@@ -1053,6 +1126,75 @@ function renderSummary() {
   el.totalTax.textContent = currency(totals.totalTax);
 }
 
+function renderCapitalSettings() {
+  if (!el.capitalSettingsCurrent) return;
+  const capital = moneyValue(state.workingCapitalBalance ?? WORKING_CAPITAL);
+  const goal = getCapitalGoal();
+  const percent = goal > 0 ? (capital / goal) * 100 : 0;
+  const remaining = goal - capital;
+  const history = Array.isArray(state.capitalChangeHistory) ? state.capitalChangeHistory : [];
+  const lastCapitalChange = history.find((entry) => entry.changeType === "capital_turnover");
+
+  el.capitalSettingsCurrent.textContent = currency(capital);
+  el.capitalGoalCurrent.textContent = currency(goal);
+  el.capitalGoalPercent.textContent = goal > 0 ? `${percent.toFixed(1).replace(".", ",")}%` : "Sem meta";
+  el.capitalGoalDetail.textContent = goal > 0 ? `${currency(capital)} de ${currency(goal)}` : "Meta nao definida";
+  el.capitalSettingsProgressBar.style.width = `${goal > 0 ? Math.min(100, percent) : 0}%`;
+  el.capitalSettingsProgressBar.classList.toggle("complete", goal > 0 && capital >= goal);
+  el.capitalSettingsRemaining.textContent =
+    goal <= 0
+      ? "Defina uma meta para acompanhar o progresso."
+      : remaining > 0
+        ? `Faltam ${currency(remaining)} para atingir a meta.`
+        : `Meta superada em ${currency(Math.abs(remaining))}.`;
+  el.capitalSettingsUpdatedBy.textContent = lastCapitalChange
+    ? `Por ${USERS[lastCapitalChange.changedBy]?.label || String(lastCapitalChange.changedBy || "Sistema").toUpperCase()}`
+    : "Sem atualizacao manual";
+  el.capitalSettingsUpdatedAt.textContent = lastCapitalChange
+    ? formatDateTime(lastCapitalChange.changedAt)
+    : "Valor inicial do sistema";
+  setCurrencyInput(el.capitalTurnoverInput, capital);
+  setCurrencyInput(el.capitalGoalInput, goal);
+
+  el.capitalHistoryCount.textContent = `${history.length} registros`;
+  el.capitalChangeHistory.innerHTML = "";
+  if (!history.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state firm-empty";
+    empty.textContent = "Nenhuma alteracao manual registrada.";
+    el.capitalChangeHistory.append(empty);
+    return;
+  }
+
+  history.forEach((entry) => {
+    const item = document.createElement("article");
+    item.className = "capital-history-item";
+    item.innerHTML = `
+      <div class="capital-history-date">
+        <span>${formatDateTime(entry.changedAt)}</span>
+        <strong>${capitalChangeLabel(entry.changeType)}</strong>
+      </div>
+      <div>
+        <span>Valor anterior</span>
+        <strong>${currency(entry.previousValue)}</strong>
+      </div>
+      <div>
+        <span>Novo valor</span>
+        <strong>${currency(entry.newValue)}</strong>
+      </div>
+      <div class="capital-history-reason">
+        <span>Motivo</span>
+        <strong>${escapeHTML(entry.reason || "Sem justificativa")}</strong>
+      </div>
+      <div>
+        <span>Usuario</span>
+        <strong>${USERS[entry.changedBy]?.label || String(entry.changedBy || "Sistema").toUpperCase()}</strong>
+      </div>
+    `;
+    el.capitalChangeHistory.append(item);
+  });
+}
+
 function renderWeeklyReport() {
   const week = currentWorkWeek();
   const weekDates = new Set(week.map((day) => day.date));
@@ -1117,6 +1259,12 @@ function renderWeeklyReport() {
 }
 
 function setActiveView(viewName) {
+  const requestedView = viewName;
+  const targetView = document.querySelector(`.app-view[data-view="${requestedView}"]`);
+  if (targetView?.hasAttribute("data-admin-only") && !isAdmin()) {
+    alert("Acesso restrito aos administradores.");
+    viewName = "dashboard";
+  }
   document.querySelectorAll(".app-view").forEach((view) => {
     view.classList.toggle("active", view.dataset.view === viewName);
   });
@@ -2201,15 +2349,19 @@ function renderFirmCommission() {
   el.firmProlaboreMM.textContent = currency(allocations.prolaboreMM);
   el.firmProlaboreFort.textContent = currency(allocations.prolaboreFort);
   el.firmAvailableAllocation.textContent = `Disponivel ${currency(allocations.available)}`;
-  const capitalProgress = Math.min(100, (allocations.workingCapital / WORKING_CAPITAL_GOAL) * 100);
-  const capitalRemaining = Math.max(0, WORKING_CAPITAL_GOAL - allocations.workingCapital);
-  el.capitalGoalStatus.textContent = `${currency(allocations.workingCapital)} de ${currency(WORKING_CAPITAL_GOAL)}`;
+  const capitalGoal = getCapitalGoal();
+  const capitalProgress = capitalGoal > 0 ? Math.min(100, (allocations.workingCapital / capitalGoal) * 100) : 0;
+  const capitalRemaining = Math.max(0, capitalGoal - allocations.workingCapital);
+  el.capitalGoalStatus.textContent =
+    capitalGoal > 0 ? `${currency(allocations.workingCapital)} de ${currency(capitalGoal)}` : "Meta nao definida";
   el.capitalGoalRemaining.textContent =
-    capitalRemaining > 0
+    capitalGoal <= 0
+      ? "Defina uma meta para acompanhar o giro."
+      : capitalRemaining > 0
       ? `Faltam ${currency(capitalRemaining)} para a empresa ficar redonda`
       : "Meta atingida. O giro de capital esta completo.";
   el.capitalProgressBar.style.width = `${capitalProgress}%`;
-  el.capitalProgressBar.classList.toggle("complete", capitalRemaining === 0);
+  el.capitalProgressBar.classList.toggle("complete", capitalGoal > 0 && capitalRemaining === 0);
   el.firmCashDetailTotal.textContent = currency(totals.firmCash);
   el.firmExpenseTotal.textContent = currency(totals.pendingExpenses);
   el.firmPaidExpenseTotal.textContent = currency(totals.paidExpenses);
@@ -2826,6 +2978,7 @@ function render() {
   renderExpenses();
   renderLinePayments();
   renderFirmCommission();
+  renderCapitalSettings();
   renderPreview();
   renderSimulation();
   el.undoResetBtn.classList.toggle("hidden", !loadBackup());
@@ -3165,6 +3318,80 @@ el.firmAllocationForm.addEventListener("submit", (event) => {
   render();
 });
 
+function validateCapitalAdminChange(amount, reason) {
+  if (!isAdmin()) {
+    alert("Apenas administradores podem alterar giro de capital e meta.");
+    return false;
+  }
+  if (!currentSession()) {
+    alert("Sessao expirada. Faca login novamente.");
+    return false;
+  }
+  if (!Number.isFinite(amount) || amount < 0) {
+    alert("Informe um valor valido.");
+    return false;
+  }
+  if (amount > 999999999999.99) {
+    alert("Valor acima do limite suportado.");
+    return false;
+  }
+  if (String(reason || "").trim().length < 5) {
+    alert("Informe uma justificativa com pelo menos 5 caracteres.");
+    return false;
+  }
+  return true;
+}
+
+el.capitalTurnoverForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const previousValue = moneyValue(state.workingCapitalBalance ?? WORKING_CAPITAL);
+  const newValue = moneyValue(parseCurrency(el.capitalTurnoverInput.value));
+  const reason = el.capitalTurnoverReason.value.trim();
+  if (!validateCapitalAdminChange(newValue, reason)) return;
+  if (newValue === previousValue) {
+    alert("O novo valor e igual ao valor atual.");
+    return;
+  }
+  if (
+    !window.confirm(
+      `Voce confirma a alteracao do giro de capital de ${currency(previousValue)} para ${currency(newValue)}?`,
+    )
+  ) {
+    return;
+  }
+  el.capitalTurnoverSaveBtn.disabled = true;
+  state.workingCapitalBalance = newValue;
+  recordCapitalChange("capital_turnover", previousValue, newValue, reason);
+  el.capitalTurnoverReason.value = "";
+  saveState();
+  render();
+  el.capitalTurnoverSaveBtn.disabled = false;
+  alert("Giro de capital atualizado com sucesso.");
+});
+
+el.capitalGoalForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const previousValue = getCapitalGoal();
+  const newValue = moneyValue(parseCurrency(el.capitalGoalInput.value));
+  const reason = el.capitalGoalReason.value.trim();
+  if (!validateCapitalAdminChange(newValue, reason)) return;
+  if (newValue === previousValue) {
+    alert("A nova meta e igual a meta atual.");
+    return;
+  }
+  if (!window.confirm(`Voce confirma a alteracao da meta de ${currency(previousValue)} para ${currency(newValue)}?`)) {
+    return;
+  }
+  el.capitalGoalSaveBtn.disabled = true;
+  state.capitalGoal = newValue;
+  recordCapitalChange("capital_goal", previousValue, newValue, reason);
+  el.capitalGoalReason.value = "";
+  saveState();
+  render();
+  el.capitalGoalSaveBtn.disabled = false;
+  alert("Meta financeira atualizada com sucesso.");
+});
+
 el.settingsForm.addEventListener("input", () => {
   if (!isAdmin()) return;
   const bankTaxRate = sanitizeRate(el.bankTaxRate.value);
@@ -3198,7 +3425,8 @@ el.simulationForm.addEventListener("submit", (event) => {
   event.preventDefault();
   renderSimulation();
 });
-[el.saleAmount, el.expenseAmount, el.simulationAmount, el.firmAllocationAmount].forEach((input) => {
+[el.saleAmount, el.expenseAmount, el.simulationAmount, el.firmAllocationAmount, el.capitalTurnoverInput, el.capitalGoalInput].forEach((input) => {
+  if (!input) return;
   input.addEventListener("input", () => {
     if (input === el.saleAmount) renderPreview();
     if (input === el.simulationAmount) renderSimulation();
