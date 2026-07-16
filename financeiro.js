@@ -477,7 +477,8 @@ function setLoggedView() {
 function login(user, password) {
   const normalizedUser = String(user || "").trim().toLowerCase();
   const normalizedPassword = String(password || "").trim();
-  if (!USERS[normalizedUser] || USERS[normalizedUser].password !== normalizedPassword) return false;
+  const expectedPassword = USERS[normalizedUser]?.password || "";
+  if (expectedPassword.toLowerCase() !== normalizedPassword.toLowerCase()) return false;
   sessionStorage.setItem(SESSION_KEY, normalizedUser);
   return true;
 }
