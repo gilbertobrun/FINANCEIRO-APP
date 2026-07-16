@@ -12,6 +12,7 @@ const SUPABASE_KEY = "sb_publishable_aWQWtwt359ZHxHD0uf4HKQ_Sjilej57";
 const SUPABASE_STATE_ENDPOINT = `${SUPABASE_URL}/rest/v1/financeiro_app_state`;
 const SUPABASE_AUTH_ENDPOINT = `${SUPABASE_URL}/auth/v1`;
 const SUPABASE_PROFILE_ENDPOINT = `${SUPABASE_URL}/rest/v1/app_profiles`;
+const SUPABASE_AUDIT_ENDPOINT = `${SUPABASE_URL}/rest/v1/audit_logs`;
 const WORKING_CAPITAL = 17148;
 const WORKING_CAPITAL_GOAL = 25000;
 const HAS_SAVED_STATE = Boolean(localStorage.getItem(STORE_KEY));
@@ -108,6 +109,7 @@ let deferredInstallPrompt = null;
 let cloudSyncEnabled = false;
 let cloudSaveTimer = null;
 let cloudLoadPromise = null;
+let settingsAuditTimer = null;
 
 const el = {
   loginScreen: document.querySelector("#loginScreen"),
@@ -491,6 +493,36 @@ async function saveStateToCloud() {
   }
 }
 
+async function writeAuditLog(action, details = {}) {
+  const authSession = getAuthSession();
+  if (!authSession?.access_token || !SUPABASE_URL || !SUPABASE_KEY) return;
+  try {
+    const response = await fetch(SUPABASE_AUDIT_ENDPOINT, {
+      method: "POST",
+      headers: supabaseHeaders({ Prefer: "return=minimal" }),
+      body: JSON.stringify({
+        username: currentSession() || "sistema",
+        user_label: currentUserLabel(),
+        action,
+        details: sanitizeForCloud(details),
+      }),
+    });
+    if (!response.ok) throw new Error(`Auditoria Supabase ${response.status}`);
+  } catch (error) {
+    console.warn("Nao foi possivel registrar auditoria.", error);
+  }
+}
+
+function scheduleSettingsAudit(previousSettings, nextSettings) {
+  window.clearTimeout(settingsAuditTimer);
+  settingsAuditTimer = window.setTimeout(() => {
+    writeAuditLog("settings.update", {
+      previousSettings,
+      nextSettings,
+    });
+  }, 1200);
+}
+
 function migrateLoanGroups() {
   const groupId = "EMPRESTIMO-90200-20260623";
   const parts = [
@@ -601,6 +633,12 @@ function recordCapitalChange(changeType, previousValue, newValue, reason) {
     reason: String(reason || "").trim(),
     changedBy: currentSession() || "sistema",
     changedAt: new Date().toISOString(),
+  });
+  writeAuditLog("capital.change", {
+    changeType,
+    previousValue: moneyValue(previousValue),
+    newValue: moneyValue(newValue),
+    reason: String(reason || "").trim(),
   });
 }
 
@@ -1163,6 +1201,11 @@ function renderAgents() {
       if (!isAdmin()) return;
       if (!confirm(`Tem certeza que deseja excluir o agente ${agent.name}?`)) return;
       agent.active = false;
+      writeAuditLog("agent.delete", {
+        agentId: agent.id,
+        name: agent.name,
+        sector: agent.sector,
+      });
       saveState();
       render();
     });
@@ -1449,6 +1492,12 @@ function renderExpenses() {
       expense.status = "Pago";
       expense.paidDate = todayISO();
       expense.paidFrom = paymentSource;
+      writeAuditLog("expense.pay", {
+        expenseId: expense.id,
+        description: expense.description,
+        amount,
+        paymentSource,
+      });
       if (paymentSource === "working_capital") {
         saveState();
         render();
@@ -1486,6 +1535,12 @@ function renderExpenses() {
       expense.status = "Pendente";
       delete expense.paidDate;
       delete expense.paidFrom;
+      writeAuditLog("expense.revert_payment", {
+        expenseId: expense.id,
+        description: expense.description,
+        amount: Number(expense.amount || 0),
+        returnedTo: paidFromWorkingCapital ? "working_capital" : "cash",
+      });
       saveState();
       render();
     });
@@ -1502,6 +1557,12 @@ function renderExpenses() {
           : `Deseja apagar definitivamente a despesa pendente "${expense.description}" de ${currency(expense.amount)}?`,
       );
       if (!confirmed) return;
+      writeAuditLog("expense.delete", {
+        expenseId: expense.id,
+        description: expense.description,
+        amount: Number(expense.amount || 0),
+        status: expense.status,
+      });
       state.expenses = state.expenses.filter((expense) => expense.id !== button.dataset.id);
       saveState();
       render();
@@ -2414,6 +2475,12 @@ function renderLinePayments() {
             item.agentId,
           ]);
         });
+      writeAuditLog("payroll.pay_agent", {
+        agentGroup: row.groupKey,
+        agentName: row.name,
+        amount: row.pendingTotal,
+        sales: row.history.filter((item) => !item.paid).map((item) => item.saleId),
+      });
       saveState();
       render();
       alert(`Folha de ${row.name} marcada como paga.`);
@@ -2607,6 +2674,12 @@ function renderFirmCommission() {
       if (allocation.type === "working_capital_expense") {
         state.workingCapitalBalance = Number(state.workingCapitalBalance || 0) + Number(allocation.amount || 0);
       }
+      writeAuditLog("firm_allocation.cancel", {
+        allocationId: allocation.id,
+        type: allocation.type,
+        amount: Number(allocation.amount || 0),
+        notes: allocation.notes || "",
+      });
       state.firmAllocations = state.firmAllocations.filter((item) => item.id !== allocation.id);
       saveState();
       render();
@@ -2971,6 +3044,13 @@ function renderSales() {
         `Deseja alterar a venda de ${currency(sale.amount)} de ${sale.status} para ${nextStatus}?`,
       );
       if (!confirmed) return;
+      writeAuditLog("sale.status_change", {
+        saleId: sale.id,
+        amount: sale.amount,
+        format: sale.format,
+        previousStatus: sale.status,
+        nextStatus,
+      });
       sale.status = nextStatus;
       saveState();
       render();
@@ -2987,6 +3067,13 @@ function renderSales() {
       );
       if (!confirmed) return;
       if (deletedSale) saveDeletedSale(deletedSale);
+      writeAuditLog("sale.delete", {
+        saleId: deletedSale.id,
+        amount: deletedSale.amount,
+        format: deletedSale.format,
+        status: deletedSale.status,
+        agentIds: deletedSale.agentIds || [],
+      });
       state.sales = state.sales.filter((sale) => sale.id !== button.dataset.id);
       saveState();
       render();
@@ -3273,6 +3360,13 @@ el.saleForm.addEventListener("submit", (event) => {
   };
   sale.calculationSnapshot = calculateSale(sale, false);
   state.sales.unshift(sale);
+  writeAuditLog("sale.create", {
+    saleId: sale.id,
+    amount: sale.amount,
+    format: sale.format,
+    status: sale.status,
+    agentIds: sale.agentIds,
+  });
   el.saleForm.reset();
   el.saleDate.value = todayISO();
   el.saleFormat.value = "standard";
@@ -3299,11 +3393,17 @@ el.agentForm.addEventListener("submit", (event) => {
     alert("Ja existe esse agente ativo nessa linha.");
     return;
   }
-  state.agents.push({
+  const newAgent = {
     id: nextAgentId(),
     name: agentName,
     sector: el.agentSector.value,
     active: true,
+  };
+  state.agents.push(newAgent);
+  writeAuditLog("agent.create", {
+    agentId: newAgent.id,
+    name: newAgent.name,
+    sector: newAgent.sector,
   });
   el.agentForm.reset();
   saveState();
@@ -3334,8 +3434,14 @@ el.agentEditForm.addEventListener("submit", (event) => {
     alert("Ja existe esse agente ativo nessa linha.");
     return;
   }
+  const previousAgent = { name: agent.name, sector: agent.sector };
   agent.name = agentName;
   agent.sector = el.agentEditSector.value;
+  writeAuditLog("agent.update", {
+    agentId: agent.id,
+    previousAgent,
+    nextAgent: { name: agent.name, sector: agent.sector },
+  });
   el.agentEditDialog.close();
   saveState();
   render();
@@ -3353,12 +3459,19 @@ el.expenseForm.addEventListener("submit", (event) => {
     el.expenseAmount.focus();
     return;
   }
-  state.expenses.unshift({
+  const expense = {
     id: crypto.randomUUID(),
     date: el.expenseDate.value,
     description: el.expenseDescription.value.trim(),
     amount,
     status: "Pendente",
+  };
+  state.expenses.unshift(expense);
+  writeAuditLog("expense.create", {
+    expenseId: expense.id,
+    description: expense.description,
+    amount: expense.amount,
+    date: expense.date,
   });
   el.expenseForm.reset();
   el.expenseDate.value = todayISO();
@@ -3376,6 +3489,10 @@ el.transferCashToCapitalBtn.addEventListener("click", () => {
   }
   if (!window.confirm(`Confirma o envio de toda a sobra de ${currency(available)} para o giro de capital?`)) return;
   transferCashBalanceToWorkingCapital(available);
+  writeAuditLog("capital.transfer_cash_balance", {
+    amount: available,
+    source: "cash_balance",
+  });
   saveState();
   render();
 });
@@ -3412,6 +3529,12 @@ el.firmAllocationForm.addEventListener("submit", (event) => {
   if (type === "working_capital") {
     state.workingCapitalBalance = Number(state.workingCapitalBalance || 0) + amount;
   }
+  writeAuditLog("firm_allocation.create", {
+    type,
+    amount,
+    date: el.firmAllocationDate.value,
+    notes: el.firmAllocationNotes.value.trim(),
+  });
   el.firmAllocationForm.reset();
   el.firmAllocationDate.value = todayISO();
   setCurrencyInput(el.firmAllocationAmount, 0);
@@ -3495,6 +3618,7 @@ el.capitalGoalForm?.addEventListener("submit", (event) => {
 
 el.settingsForm.addEventListener("input", () => {
   if (!isAdmin()) return;
+  const previousSettings = sanitizeForCloud(state.settings);
   const bankTaxRate = sanitizeRate(el.bankTaxRate.value);
   const firmCashRate = Math.min(sanitizeRate(el.firmCashRate.value), bankTaxRate);
   state.settings = {
@@ -3507,6 +3631,7 @@ el.settingsForm.addEventListener("input", () => {
   };
   el.bankTaxRate.value = state.settings.bankTaxRate;
   el.firmCashRate.value = state.settings.firmCashRate;
+  scheduleSettingsAudit(previousSettings, sanitizeForCloud(state.settings));
   saveState();
   renderSummary();
   renderAgents();
@@ -3573,6 +3698,11 @@ el.recoverDeletedSalesBtn.addEventListener("click", () => {
   });
   state.sales = [...candidates, ...state.sales];
   localStorage.removeItem(DELETED_SALES_KEY);
+  writeAuditLog("sale.recover_deleted", {
+    recoveredCount: candidates.length,
+    saleIds: candidates.map((sale) => sale.id),
+    totalRecovered: candidates.reduce((total, sale) => total + Number(sale.amount || 0), 0),
+  });
   saveState();
   render();
   alert(`${candidates.length} venda(s) recuperada(s) com sucesso.`);
@@ -3589,6 +3719,12 @@ el.deleteAllRecordsBtn.addEventListener("click", () => {
   );
   if (!finalConfirmation) return;
 
+  writeAuditLog("weekly_close.delete_all", {
+    salesCount: state.sales.length,
+    expensesCount: state.expenses.length,
+    allocationsCount: Array.isArray(state.firmAllocations) ? state.firmAllocations.length : 0,
+    totalSold: summarize().totalSold,
+  });
   state.sales = [];
   state.expenses = [];
   state.firmAllocations = [];
@@ -3604,6 +3740,9 @@ el.resetDemoBtn.addEventListener("click", () => {
   saveBackup();
   state = structuredClone(defaults);
   migrateCalculationSnapshots();
+  writeAuditLog("system.restore_example", {
+    restoredAt: new Date().toISOString(),
+  });
   saveState();
   render();
 });
@@ -3614,6 +3753,9 @@ el.undoResetBtn.addEventListener("click", () => {
   if (!backup) return;
   state = backup;
   migrateCalculationSnapshots();
+  writeAuditLog("system.undo_restore", {
+    restoredAt: new Date().toISOString(),
+  });
   saveState();
   localStorage.removeItem(BACKUP_KEY);
   render();

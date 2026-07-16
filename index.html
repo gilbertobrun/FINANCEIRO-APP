@@ -11,7 +11,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <link rel="icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260716-expenses-mobile" />
+    <link rel="stylesheet" href="./styles.css?v=20260716-bloco1-bloco2" />
   </head>
   <body>
     <section id="loginScreen" class="login-screen">
@@ -437,6 +437,15 @@
         </section>
 
         <section class="app-view" data-view="linePayments">
+          <section class="page-hero payroll-hero" aria-label="Folha de pagamento">
+            <div>
+              <span>Folha de pagamento</span>
+              <strong>Comissoes dos vendedores</strong>
+              <small>Confira totais por vendedor, vendas pagas e gere o comprovante para envio.</small>
+            </div>
+            <button class="page-hero-action" type="button" data-view-target="history">Ver vendas</button>
+          </section>
+
           <section class="summary-grid compact-summary" aria-label="Resumo de pagamento dos vendedores">
             <article class="metric">
               <span>Total Vendedor 1</span>
@@ -466,6 +475,15 @@
         </section>
 
         <section class="app-view" data-view="firmCommission">
+          <section class="page-hero firm-hero" aria-label="Resumo financeiro da firma">
+            <div>
+              <span>Firma</span>
+              <strong>Controle financeiro interno</strong>
+              <small>Sobra da firma, caixa, giro de capital, despesas e pro-labore reunidos para conferencia.</small>
+            </div>
+            <button class="page-hero-action" type="button" data-view-target="history">Ver historico</button>
+          </section>
+
           <section class="firm-receipt-actions" aria-label="Comprovante da firma">
             <div>
               <span>Conferencia completa</span>
@@ -657,6 +675,15 @@
         </section>
 
         <section class="app-view" data-view="history">
+          <section class="page-hero history-hero" aria-label="Historico e relatorios">
+            <div>
+              <span>Relatorios</span>
+              <strong>Historico financeiro</strong>
+              <small>Consulte vendas, formatos, caixa da firma e prova real do dinheiro.</small>
+            </div>
+            <button class="page-hero-action" type="button" data-view-target="firmCommission">Ver firma</button>
+          </section>
+
           <section class="panel history-panel">
             <div class="panel-heading">
               <h2>Vendas</h2>
@@ -740,6 +767,15 @@
         </section>
 
         <section class="app-view" data-view="settings" data-admin-only>
+          <section class="page-hero settings-hero" aria-label="Configuracoes">
+            <div>
+              <span>Configuracoes</span>
+              <strong>Agentes e percentuais</strong>
+              <small>Cadastre vendedores, organize linhas e confira regras operacionais do app.</small>
+            </div>
+            <button class="page-hero-action" type="button" data-view-target="capitalSettings">Giro e meta</button>
+          </section>
+
           <div class="settings-layout">
           <section class="panel agent-settings-panel">
             <div class="panel-heading settings-heading">
@@ -864,7 +900,7 @@
     </dialog>
 
     <script src="./migration-data.js?v=20260624-permissoes"></script>
-    <script src="./financeiro.js?v=20260716-expenses-mobile"></script>
+    <script src="./financeiro.js?v=20260716-bloco1-bloco2"></script>
   </body>
 </html>
 

@@ -5684,3 +5684,329 @@ h2 {
     border-radius: 14px !important;
   }
 }
+
+/* Bloco 1 - acabamento visual completo das telas operacionais */
+.page-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 18px;
+  border: 1px solid rgba(214, 169, 79, 0.26);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(214, 169, 79, 0.18), transparent 32%),
+    linear-gradient(145deg, #151515, #080808);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+}
+
+.page-hero span,
+.page-hero small {
+  display: block;
+  color: #d8c89e;
+  font-weight: 800;
+}
+
+.page-hero span {
+  margin-bottom: 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.page-hero strong {
+  color: #fff7df;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.page-hero small {
+  margin-top: 8px;
+  max-width: 620px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.page-hero-action {
+  min-width: 132px;
+  min-height: 46px;
+  border: 1px solid rgba(214, 169, 79, 0.32);
+  border-radius: 999px;
+  background: rgba(214, 169, 79, 0.12);
+  color: #f4d98f;
+  font-weight: 900;
+}
+
+.payment-card-list,
+.history-card-list,
+.firm-sale-card-list,
+.expense-card-list,
+.firm-work-list,
+.settings-agent-list {
+  gap: 12px;
+}
+
+.payment-agent-card,
+.format-sale-card,
+.firm-sale-card,
+.firm-expense-card,
+.firm-work-card,
+.agent-row,
+.capital-history-item {
+  border-radius: 20px !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012)),
+    #101010 !important;
+  box-shadow: inset 0 0 0 1px rgba(214, 169, 79, 0.18), 0 16px 34px rgba(0, 0, 0, 0.22) !important;
+}
+
+.payment-agent-card {
+  padding: 18px !important;
+}
+
+.payment-agent-card > div:first-child,
+.format-sale-card .sale-modern-head,
+.firm-sale-card,
+.agent-row {
+  align-items: center;
+}
+
+.payment-total {
+  border-radius: 20px !important;
+  background: linear-gradient(145deg, #f5d372, #d7a94d) !important;
+}
+
+.payment-total span,
+.payment-total strong {
+  color: #050505 !important;
+}
+
+.payment-history {
+  border-radius: 18px !important;
+  background: rgba(0, 0, 0, 0.22) !important;
+}
+
+.payment-history-item {
+  border-radius: 16px !important;
+}
+
+.download-receipt-button {
+  border-radius: 16px !important;
+}
+
+.history-format-totals {
+  gap: 10px;
+}
+
+.history-format-totals article,
+.firm-cash-history-card,
+.proof-card,
+.weekly-close,
+.treasury-panel,
+.capital-edit-card,
+.capital-history-panel,
+.agent-settings-panel,
+.settings-panel {
+  border-radius: 22px !important;
+  background: linear-gradient(145deg, #141414, #080808) !important;
+  box-shadow: inset 0 0 0 1px rgba(214, 169, 79, 0.18) !important;
+}
+
+.proof-card-total,
+.proof-difference,
+.firm-cash-history-heading {
+  border-radius: 18px !important;
+}
+
+.firm-detail-grid,
+.settings-layout,
+.capital-settings-grid {
+  gap: 14px;
+}
+
+.firm-allocation-form,
+.capital-admin-form,
+.agent-form {
+  gap: 10px;
+}
+
+.firm-allocation-form input,
+.firm-allocation-form select,
+.capital-admin-form input,
+.capital-admin-form textarea,
+.agent-form input,
+.agent-form select,
+.rates-grid input {
+  min-height: 48px;
+  border-radius: 14px !important;
+}
+
+@media (max-width: 767.98px) {
+  .page-hero {
+    display: grid;
+    gap: 14px;
+    margin: 4px 0 12px;
+    padding: 16px;
+    border-radius: 24px;
+  }
+
+  .page-hero strong {
+    font-size: 25px;
+  }
+
+  .page-hero-action {
+    width: 100%;
+    min-height: 52px;
+    border-radius: 16px;
+  }
+
+  [data-view="linePayments"] .compact-summary,
+  [data-view="firmCommission"] .compact-summary,
+  .history-format-totals,
+  .capital-settings-grid,
+  .settings-layout,
+  .firm-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  [data-view="linePayments"] .metric,
+  [data-view="firmCommission"] .metric,
+  .history-format-totals article {
+    min-height: 78px;
+    border-radius: 18px !important;
+  }
+
+  .payment-agent-card {
+    padding: 14px !important;
+  }
+
+  .payment-agent-card > div:first-child {
+    display: grid !important;
+    gap: 10px;
+  }
+
+  .payment-total {
+    display: grid;
+    gap: 4px;
+    min-height: 88px;
+    padding: 15px !important;
+  }
+
+  .payment-total strong {
+    font-size: 28px !important;
+  }
+
+  .payment-history {
+    padding: 10px !important;
+  }
+
+  .payment-history-item {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    padding: 12px !important;
+  }
+
+  .payment-history-item > strong {
+    text-align: left !important;
+    font-size: 22px !important;
+  }
+
+  .download-receipt-button,
+  .payment-agent-card .secondary-button,
+  .payment-agent-card button {
+    width: 100%;
+    min-height: 50px;
+    border-radius: 16px !important;
+  }
+
+  .history-panel {
+    padding: 14px !important;
+  }
+
+  .history-panel .panel-heading {
+    display: grid !important;
+    gap: 12px;
+  }
+
+  .history-filters {
+    justify-content: stretch !important;
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
+
+  .history-filters select {
+    width: 100%;
+    min-height: 50px;
+    border-radius: 15px !important;
+  }
+
+  .format-sale-card {
+    padding: 14px !important;
+  }
+
+  .format-sale-card .sale-modern-head,
+  .format-sale-card .sale-modern-people,
+  .format-sale-card .sale-modern-flow,
+  .format-sale-card .sale-modern-details {
+    grid-template-columns: 1fr !important;
+  }
+
+  .format-table {
+    overflow-x: auto;
+  }
+
+  .format-table-head,
+  .format-table-row {
+    min-width: 720px;
+  }
+
+  .proof-card-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  .proof-card,
+  .firm-cash-history-card,
+  .weekly-close,
+  .treasury-panel,
+  .capital-edit-card,
+  .capital-history-panel,
+  .agent-settings-panel,
+  .settings-panel {
+    padding: 14px !important;
+  }
+
+  .firm-allocation-form,
+  .capital-admin-form,
+  .agent-form,
+  .rates-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .firm-allocation-form button,
+  .capital-admin-form button,
+  .agent-form button {
+    width: 100%;
+    min-height: 52px;
+    border-radius: 16px !important;
+  }
+
+  .agent-row {
+    display: grid !important;
+    gap: 12px;
+    padding: 13px !important;
+  }
+
+  .agent-actions {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .agent-actions button {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 14px !important;
+  }
+}
