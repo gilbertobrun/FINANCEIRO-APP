@@ -11,7 +11,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <link rel="icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260716-receipts-preview" />
+    <link rel="stylesheet" href="./styles.css?v=20260716-expenses-mobile" />
   </head>
   <body>
     <section id="loginScreen" class="login-screen">
@@ -375,6 +375,17 @@
         </section>
 
         <section class="app-view" data-view="expenses">
+          <section class="expense-hero" aria-label="Controle de despesas">
+            <div>
+              <span>Controle de saidas</span>
+              <strong>Despesas da semana</strong>
+              <small>Registre, confira e confirme pagamentos pelo caixa ou giro de capital.</small>
+            </div>
+            <button class="expense-hero-action" type="button" data-view-target="firmCommission">
+              Ver caixa
+            </button>
+          </section>
+
           <section class="summary-grid expense-overview" aria-label="Resumo das despesas">
             <article class="metric">
               <span>Despesas a pagar</span>
@@ -853,7 +864,7 @@
     </dialog>
 
     <script src="./migration-data.js?v=20260624-permissoes"></script>
-    <script src="./financeiro.js?v=20260716-receipts-preview"></script>
+    <script src="./financeiro.js?v=20260716-expenses-mobile"></script>
   </body>
 </html>
 

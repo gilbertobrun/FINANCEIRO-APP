@@ -1045,6 +1045,57 @@ label,
   gap: 14px;
 }
 
+.expense-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 18px;
+  border: 1px solid rgba(214, 169, 79, 0.26);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(214, 169, 79, 0.18), transparent 32%),
+    linear-gradient(145deg, #151515, #080808);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+}
+
+.expense-hero span,
+.expense-hero small {
+  display: block;
+  color: #d8c89e;
+  font-weight: 800;
+}
+
+.expense-hero span {
+  margin-bottom: 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.expense-hero strong {
+  color: #fff7df;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.expense-hero small {
+  margin-top: 8px;
+  max-width: 520px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.expense-hero-action {
+  min-width: 132px;
+  min-height: 46px;
+  border: 1px solid rgba(214, 169, 79, 0.32);
+  border-radius: 999px;
+  background: rgba(214, 169, 79, 0.12);
+  color: #f4d98f;
+  font-weight: 900;
+}
+
 .expense-overview {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -5507,5 +5558,129 @@ h2 {
   .receipt-dialog-actions button {
     width: 100%;
     min-height: 52px;
+  }
+
+  .expense-hero {
+    display: grid;
+    gap: 14px;
+    margin: 4px 0 12px;
+    padding: 16px;
+    border-radius: 24px;
+  }
+
+  .expense-hero strong {
+    font-size: 25px;
+  }
+
+  .expense-hero-action {
+    width: 100%;
+    min-height: 52px;
+    border-radius: 16px;
+  }
+
+  .expense-overview {
+    grid-template-columns: 1fr !important;
+    gap: 9px !important;
+  }
+
+  .expense-overview .metric {
+    min-height: 82px;
+    border-radius: 18px !important;
+  }
+
+  .expenses-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .expense-form {
+    grid-template-columns: 1fr !important;
+  }
+
+  .expense-form label {
+    gap: 8px;
+    padding: 13px;
+    border: 1px solid rgba(242, 205, 115, 0.16);
+    border-radius: 18px;
+    background: linear-gradient(145deg, #131313, #080808);
+  }
+
+  .expense-form input {
+    min-height: 52px;
+    border-radius: 15px !important;
+    padding: 12px 13px !important;
+    font-size: 16px;
+    font-weight: 850;
+  }
+
+  #expenseAmount {
+    font-size: 20px;
+  }
+
+  .expense-form button {
+    min-height: 54px;
+    border-radius: 17px !important;
+  }
+
+  .bank-statement {
+    gap: 10px;
+  }
+
+  .statement-item {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+    min-height: 0;
+    border-radius: 20px !important;
+    padding: 14px !important;
+    background: linear-gradient(145deg, #141414, #080808) !important;
+  }
+
+  .statement-date,
+  .statement-main,
+  .statement-amount,
+  .pay-expense,
+  .expense-paid-badge,
+  .statement-delete {
+    grid-column: auto !important;
+  }
+
+  .statement-date {
+    min-height: auto;
+    justify-items: start;
+    place-items: initial;
+    padding: 0;
+    background: transparent !important;
+    color: #d8c89e !important;
+    text-align: left;
+  }
+
+  .statement-date small {
+    margin-top: 4px;
+    color: #9bd9ae !important;
+  }
+
+  .statement-main strong {
+    font-size: 18px;
+  }
+
+  .statement-amount {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+  }
+
+  .statement-amount strong {
+    font-size: 22px;
+  }
+
+  .pay-expense,
+  .revert-expense,
+  .statement-delete,
+  .expense-paid-badge {
+    width: 100%;
+    min-height: 46px;
+    border-radius: 14px !important;
   }
 }
