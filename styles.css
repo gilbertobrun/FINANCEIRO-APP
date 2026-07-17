@@ -21,6 +21,383 @@
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Etapa 5 - tempo real, semanas financeiras e calendario */
+.sync-status {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+
+.sync-status small {
+  color: #d8c89e;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.sync-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid rgba(242, 205, 115, 0.28);
+  border-radius: 14px;
+  background: rgba(242, 205, 115, 0.10);
+  color: #fff7df;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.sync-icon {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #f5d372;
+  border-right-color: transparent;
+  border-radius: 999px;
+}
+
+.sync-button.loading .sync-icon {
+  animation: syncSpin 0.8s linear infinite;
+}
+
+@keyframes syncSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.finance-week-shell,
+.calendar-panel,
+.day-detail-panel,
+.closings-panel,
+.weekly-admin-danger {
+  margin-bottom: 14px;
+  border: 1px solid rgba(242, 205, 115, 0.18);
+  border-radius: 22px;
+  background: linear-gradient(145deg, #141414, #090909);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.finance-week-shell {
+  padding: 14px;
+}
+
+.finance-month-control,
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.finance-month-control strong,
+.calendar-toolbar strong {
+  color: #fff7df;
+  text-transform: capitalize;
+}
+
+.finance-month-control button,
+.calendar-toolbar button {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(242, 205, 115, 0.24);
+  border-radius: 14px;
+  background: #090909;
+  color: #f5d372;
+  font-weight: 900;
+}
+
+.finance-week-tabs {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-bottom: 4px;
+}
+
+.finance-week-tab {
+  flex: 0 0 174px;
+  display: grid;
+  gap: 3px;
+  min-height: 82px;
+  padding: 12px;
+  border: 1px solid rgba(242, 205, 115, 0.18);
+  border-radius: 18px;
+  background: #0c0c0c;
+  color: #fff7df;
+  text-align: left;
+  cursor: pointer;
+}
+
+.finance-week-tab.active {
+  border-color: #f5d372;
+  background: linear-gradient(145deg, #f5d372, #d4a64a);
+  color: #080808;
+}
+
+.finance-week-tab span,
+.finance-week-tab small {
+  font-size: 11px;
+  color: inherit;
+  opacity: 0.82;
+}
+
+.finance-week-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  color: #d8c89e;
+}
+
+.week-status-badge,
+.finance-week-summary strong,
+.closing-card > div:first-child span {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(242, 205, 115, 0.13);
+  color: #f5d372;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.weekly-close-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.weekly-close-summary-grid article,
+.day-detail-totals article {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(242, 205, 115, 0.18);
+  border-radius: 20px;
+  background: #101010;
+}
+
+.weekly-close-summary-grid span,
+.day-detail-totals span,
+.closing-card span,
+.calendar-legend {
+  color: #d8c89e;
+  font-size: 12px;
+}
+
+.weekly-close-summary-grid strong,
+.day-detail-totals strong,
+.closing-card strong {
+  display: block;
+  margin-top: 6px;
+  color: #fff7df;
+  font-size: 22px;
+}
+
+.weekly-closings-list {
+  display: grid;
+  gap: 10px;
+}
+
+.closing-card {
+  display: grid;
+  grid-template-columns: 1.35fr repeat(4, minmax(120px, 0.8fr)) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid rgba(242, 205, 115, 0.16);
+  border-radius: 18px;
+  background: #0b0b0b;
+}
+
+.weekly-admin-danger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px;
+  border-color: rgba(255, 100, 100, 0.35);
+}
+
+.weekly-admin-danger h2,
+.danger-copy {
+  color: #ffb1b1;
+}
+
+.weekly-admin-danger button,
+.danger-action {
+  background: #c91414 !important;
+  color: #fff !important;
+}
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.calendar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.financial-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.calendar-weekday {
+  color: #d8c89e;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.calendar-day {
+  min-height: 92px;
+  padding: 10px;
+  border: 1px solid rgba(242, 205, 115, 0.14);
+  border-radius: 16px;
+  background: #0a0a0a;
+  color: #fff7df;
+  text-align: left;
+}
+
+.calendar-day.muted {
+  opacity: 0.36;
+}
+
+.calendar-day.today {
+  border-color: #f5d372;
+}
+
+.calendar-day.selected {
+  background: linear-gradient(145deg, rgba(245, 211, 114, 0.30), rgba(245, 211, 114, 0.08));
+}
+
+.calendar-day.friday span:first-child::after {
+  content: " fechamento";
+  display: block;
+  margin-top: 2px;
+  color: #f5d372;
+  font-size: 10px;
+}
+
+.calendar-day small {
+  display: block;
+  margin-top: 4px;
+  color: #d8c89e;
+  font-size: 10px;
+}
+
+.calendar-markers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.dot-sale,
+.dot-expense,
+.dot-pending,
+.dot-closing {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+}
+
+.dot-sale { background: #4ade80; }
+.dot-expense { background: #fb7185; }
+.dot-pending { background: #facc15; }
+.dot-closing { background: #60a5fa; }
+
+.day-detail-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.day-detail-list {
+  display: grid;
+  gap: 8px;
+}
+
+.day-detail-list h3 {
+  margin: 8px 0 0;
+  color: #f5d372;
+}
+
+.day-detail-list p {
+  margin: 0;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  color: #fff7df;
+}
+
+.week-delete-dialog textarea {
+  resize: vertical;
+}
+
+@media (max-width: 767.98px) {
+  .sync-status {
+    justify-items: stretch;
+    width: 100%;
+  }
+
+  .sync-button {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .finance-week-shell {
+    margin-inline: 0;
+    border-radius: 20px;
+  }
+
+  .finance-week-tab {
+    flex-basis: 146px;
+  }
+
+  .finance-week-summary,
+  .weekly-admin-danger {
+    display: grid;
+  }
+
+  .weekly-close-summary-grid,
+  .day-detail-totals {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .closing-card {
+    grid-template-columns: 1fr;
+  }
+
+  .financial-calendar-grid {
+    gap: 5px;
+  }
+
+  .calendar-day {
+    min-height: 74px;
+    padding: 7px;
+    border-radius: 12px;
+  }
+
+  .calendar-day.friday span:first-child::after {
+    content: "sex";
+  }
+}
+
 * {
   box-sizing: border-box;
 }

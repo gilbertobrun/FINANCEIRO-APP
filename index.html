@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
@@ -11,7 +11,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <link rel="icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260716-bloco1-bloco2" />
+    <link rel="stylesheet" href="./styles.css?v=20260717-realtime-semanas" />
   </head>
   <body>
     <section id="loginScreen" class="login-screen">
@@ -72,6 +72,8 @@
 
           <span class="menu-section-title">Gestao</span>
           <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-simulate" aria-hidden="true"></span><span class="menu-copy"><strong>Relatorios</strong><small>Resumo e historico</small></span></button>
+          <button class="menu-item" type="button" data-view-target="calendar"><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Calendario Financeiro</strong><small>Mes, semanas e lancamentos</small></span></button>
+          <button class="menu-item" type="button" data-view-target="weeklyClosings"><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Historico de Fechamentos</strong><small>Semanas fechadas</small></span></button>
           <button class="menu-item" type="button" data-view-target="firmCommission"><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Comprovantes</strong><small>Documentos para envio</small></span></button>
           <button class="menu-item" type="button" data-view-target="settings" data-admin-only><span class="menu-icon icon-vendors" aria-hidden="true"></span><span class="menu-copy"><strong>Usuarios</strong><small>Acessos e permissoes</small></span></button>
           <button class="menu-item" type="button" data-view-target="settings" data-admin-only><span class="menu-icon icon-settings" aria-hidden="true"></span><span class="menu-copy"><strong>Configuracoes</strong><small>Ajustes do sistema</small></span></button>
@@ -102,12 +104,32 @@
             </div>
           </div>
           <div class="topbar-actions">
+            <div class="sync-status" aria-live="polite">
+              <button id="manualRefreshBtn" class="sync-button" type="button" title="Atualizar dados">
+                <span class="sync-icon" aria-hidden="true"></span>
+                <span>Atualizar</span>
+              </button>
+              <small id="lastSyncLabel">Ultima atualizacao: agora</small>
+            </div>
             <button id="exportCsvBtn" class="secondary-button" type="button" title="Exportar vendas e despesas para CSV">Exportar CSV</button>
             <button id="undoResetBtn" class="ghost-button hidden" type="button" title="Desfazer ultima restauracao" data-admin-only>Desfazer restaurar</button>
             <button id="resetDemoBtn" class="ghost-button" type="button" title="Restaurar dados de exemplo" data-admin-only>Restaurar exemplo</button>
             <button id="logoutBtn" class="ghost-button" type="button" title="Sair do acesso">Sair</button>
           </div>
         </header>
+
+        <section class="finance-week-shell" aria-label="Controle semanal financeiro">
+          <div class="finance-month-control">
+            <button id="prevFinanceMonthBtn" type="button" aria-label="Mes anterior">&lt;</button>
+            <strong id="financeMonthLabel">Mes atual</strong>
+            <button id="nextFinanceMonthBtn" type="button" aria-label="Proximo mes">&gt;</button>
+          </div>
+          <div id="financeWeekTabs" class="finance-week-tabs" role="tablist"></div>
+          <div class="finance-week-summary">
+            <span id="selectedWeekPeriod">Periodo da semana</span>
+            <strong id="selectedWeekStatus">Em andamento</strong>
+          </div>
+        </section>
 
         <section class="app-view active" data-view="dashboard">
           <section class="home-hero">
@@ -766,6 +788,88 @@
           </section>
         </section>
 
+        <section class="app-view" data-view="weeklyClosings">
+          <section class="page-hero closings-hero" aria-label="Historico de fechamentos">
+            <div>
+              <span>Fechamentos</span>
+              <strong>Historico semanal</strong>
+              <small>Consulte semanas fechadas, totais consolidados e reabra apenas com permissao administrativa.</small>
+            </div>
+            <button id="closeSelectedWeekBtn" class="page-hero-action" type="button" data-admin-only>Fechar semana</button>
+          </section>
+
+          <section class="weekly-close-summary-grid">
+            <article><span>Total de vendas</span><strong id="weekTotalSales">R$ 0,00</strong></article>
+            <article><span>Despesas</span><strong id="weekTotalExpenses">R$ 0,00</strong></article>
+            <article><span>Recebido</span><strong id="weekTotalReceipts">R$ 0,00</strong></article>
+            <article><span>Pendente</span><strong id="weekTotalPending">R$ 0,00</strong></article>
+            <article><span>Lucro da semana</span><strong id="weekTotalProfit">R$ 0,00</strong></article>
+            <article><span>Meta semanal</span><strong id="weekTargetValue">R$ 0,00</strong></article>
+            <article><span>Percentual da meta</span><strong id="weekTargetPercent">0%</strong></article>
+            <article><span>Giro de capital</span><strong id="weekCapitalTurnover">R$ 0,00</strong></article>
+          </section>
+
+          <section class="panel closings-panel">
+            <div class="panel-heading">
+              <div>
+                <span>Auditoria semanal</span>
+                <h2>Historico de Fechamentos</h2>
+              </div>
+              <div class="history-filters">
+                <select id="closingMonthFilter" title="Mes dos fechamentos"></select>
+                <select id="closingYearFilter" title="Ano dos fechamentos"></select>
+              </div>
+            </div>
+            <div id="weeklyClosingsList" class="weekly-closings-list"></div>
+          </section>
+
+          <section class="weekly-admin-danger panel" data-admin-only>
+            <div>
+              <span>Administrativo</span>
+              <h2>Exclusao controlada por periodo</h2>
+              <p>Use somente para limpar lancamentos operacionais da semana selecionada. A auditoria permanece preservada.</p>
+            </div>
+            <button id="deleteSelectedWeekBtn" type="button">Apagar dados da semana</button>
+          </section>
+        </section>
+
+        <section class="app-view" data-view="calendar">
+          <section class="page-hero calendar-hero" aria-label="Calendario financeiro">
+            <div>
+              <span>Calendario</span>
+              <strong>Calendario financeiro</strong>
+              <small>Veja vendas, despesas, vencimentos e fechamentos por dia.</small>
+            </div>
+            <button id="calendarTodayBtn" class="page-hero-action" type="button">Hoje</button>
+          </section>
+
+          <section class="calendar-panel panel">
+            <div class="calendar-toolbar">
+              <button id="prevCalendarMonthBtn" type="button">&lt;</button>
+              <strong id="calendarMonthLabel">Mes atual</strong>
+              <button id="nextCalendarMonthBtn" type="button">&gt;</button>
+            </div>
+            <div class="calendar-legend" aria-label="Legenda">
+              <span><i class="dot-sale"></i>Venda</span>
+              <span><i class="dot-expense"></i>Despesa</span>
+              <span><i class="dot-pending"></i>Pendente</span>
+              <span><i class="dot-closing"></i>Fechamento</span>
+            </div>
+            <div id="financialCalendarGrid" class="financial-calendar-grid"></div>
+          </section>
+
+          <section class="panel day-detail-panel">
+            <div class="panel-heading">
+              <div>
+                <span>Detalhes do dia</span>
+                <h2 id="calendarSelectedDateTitle">Selecione um dia</h2>
+              </div>
+              <strong id="calendarDayStatus">Sem lancamentos</strong>
+            </div>
+            <div id="calendarDayDetails" class="calendar-day-details"></div>
+          </section>
+        </section>
+
         <section class="app-view" data-view="settings" data-admin-only>
           <section class="page-hero settings-hero" aria-label="Configuracoes">
             <div>
@@ -830,10 +934,36 @@
         <button class="menu-item" type="button" data-view-target="expenses"><span class="menu-icon icon-expense" aria-hidden="true"></span><span>Despesas</span></button>
         <button class="menu-item" type="button" data-view-target="linePayments"><span class="menu-icon icon-vendors" aria-hidden="true"></span><span>Vendedores</span></button>
         <button class="menu-item" type="button" data-view-target="firmCommission"><span class="menu-icon icon-firm" aria-hidden="true"></span><span>Firma</span></button>
+        <button class="menu-item" type="button" data-view-target="calendar"><span class="menu-icon icon-history" aria-hidden="true"></span><span>Agenda</span></button>
         <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-history" aria-hidden="true"></span><span>Historico</span></button>
         <button class="menu-item" type="button" data-view-target="settings" data-admin-only><span class="menu-icon icon-settings" aria-hidden="true"></span><span>Config.</span></button>
       </nav>
     </main>
+
+    <dialog id="weekDeleteDialog" class="agent-edit-dialog week-delete-dialog">
+      <form id="weekDeleteForm" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <span class="section-kicker">Exclusao controlada</span>
+            <h2>Apagar dados da semana</h2>
+          </div>
+          <button id="weekDeleteCancelTop" class="dialog-close" type="button" aria-label="Fechar">X</button>
+        </div>
+        <p id="weekDeleteWarning" class="danger-copy">Esta acao removera os dados operacionais da semana selecionada.</p>
+        <label>
+          Motivo da exclusao
+          <textarea id="weekDeleteReason" rows="3" minlength="8" placeholder="Explique o motivo" required></textarea>
+        </label>
+        <label>
+          Digite APAGAR para confirmar
+          <input id="weekDeleteConfirmText" type="text" autocomplete="off" required />
+        </label>
+        <div class="dialog-actions">
+          <button id="weekDeleteCancel" class="ghost-button" type="button">Cancelar</button>
+          <button class="secondary-button danger-action" type="submit">Confirmar exclusao</button>
+        </div>
+      </form>
+    </dialog>
 
     <dialog id="firmReceiptDialog" class="receipt-dialog" aria-label="Previa do comprovante da firma">
       <div class="receipt-dialog-card">
@@ -900,7 +1030,6 @@
     </dialog>
 
     <script src="./migration-data.js?v=20260624-permissoes"></script>
-    <script src="./financeiro.js?v=20260716-bloco1-bloco2"></script>
+    <script src="./financeiro.js?v=20260717-realtime-semanas"></script>
   </body>
 </html>
-

@@ -1,4 +1,5 @@
 recovery-state.js
+app.js
 server.js
 server-8766.js
 *.log
