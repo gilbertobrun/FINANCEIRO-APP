@@ -1247,11 +1247,41 @@ function activeAllocations(allocations = state.firmAllocations) {
   return (allocations || []).filter((allocation) => !allocation.is_deleted && !allocation.deleted_at);
 }
 
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function findExpenseForAllocation(allocation) {
+  if (!allocation || allocation.type !== "working_capital_expense") return null;
+  if (allocation.expenseId) {
+    const byId = activeExpenses().find((expense) => expense.id === allocation.expenseId);
+    if (byId) return byId;
+  }
+  const allocationNote = normalizeText(allocation.notes);
+  const amount = Number(allocation.amount || 0);
+  return activeExpenses().find((expense) => {
+    const sameAmount = Math.abs(Number(expense.amount || 0) - amount) < 0.01;
+    const description = normalizeText(expense.description);
+    return sameAmount && description && allocationNote.includes(description);
+  });
+}
+
+function allocationAccountingDate(allocation) {
+  if (allocation?.type !== "working_capital_expense") return allocation?.date;
+  return allocation.expenseDate || findExpenseForAllocation(allocation)?.date || allocation.date;
+}
+
 function recordsForWeek(week) {
   if (!week) return { sales: [], expenses: [], allocations: [] };
   const sales = activeSales().filter((sale) => isWithinPeriod(sale.date, week.startDate, week.endDate));
   const expenses = activeExpenses().filter((expense) => isWithinPeriod(expense.date, week.startDate, week.endDate));
-  const allocations = activeAllocations().filter((allocation) => isWithinPeriod(allocation.date, week.startDate, week.endDate));
+  const allocations = activeAllocations().filter((allocation) =>
+    isWithinPeriod(allocationAccountingDate(allocation), week.startDate, week.endDate),
+  );
   return { sales, expenses, allocations };
 }
 
@@ -1646,6 +1676,17 @@ function applyDataMigrations() {
   if (currentVersion < 10 && archiveCurrentWeekAsLastWeek()) {
     changed = true;
   }
+
+  activeAllocations().forEach((allocation) => {
+    if (allocation.type !== "working_capital_expense" || allocation.expenseDate) return;
+    const expense = findExpenseForAllocation(allocation);
+    if (!expense?.date) return;
+    allocation.expenseId = allocation.expenseId || expense.id;
+    allocation.expenseDate = expense.date;
+    allocation.paidDate = allocation.paidDate || allocation.date || expense.paidDate || todayISO();
+    allocation.date = expense.date;
+    changed = true;
+  });
 
   if (state.dataVersion !== DATA_VERSION) {
     state.dataVersion = DATA_VERSION;
@@ -2270,7 +2311,10 @@ function renderExpenses() {
           id: crypto.randomUUID(),
           type: "working_capital_expense",
           amount,
-          date: todayISO(),
+          date: expense.date,
+          expenseDate: expense.date,
+          paidDate: todayISO(),
+          expenseId: expense.id,
           notes: `Pagamento de despesa pelo giro: ${expense.description || "Despesa"}`,
           createdBy: currentSession(),
           createdAt: new Date().toISOString(),
@@ -3431,11 +3475,12 @@ function renderFirmCommission() {
       working_capital_expense: "Despesa paga pelo giro",
     };
     visibleAllocations.forEach((allocation) => {
+      const displayDate = allocationAccountingDate(allocation);
       const card = document.createElement("article");
       card.className = "allocation-item";
       card.innerHTML = `
         <div>
-          <span>${dateWithWeekday(allocation.date)}</span>
+          <span>${dateWithWeekday(displayDate)}</span>
           <strong>${labels[allocation.type] || "Destinacao da firma"}</strong>
           <small>${escapeHTML(allocation.notes || "Sem observacao")}</small>
         </div>
