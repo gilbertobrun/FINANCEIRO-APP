@@ -513,6 +513,7 @@ async function loadStateFromCloud({ silent = false } = {}) {
         migrateCalculationSnapshots();
         ensureAgentSectors(["2D", "LOIRA"], ["1 Linha", "2 Linha", "3 Linha"]);
         applyDataMigrations();
+        syncFinanceWeekToToday();
         cloudSyncEnabled = true;
         updateLastSyncLabel(new Date());
         render();
@@ -1084,6 +1085,23 @@ function getSelectedFinancialWeek() {
   return weeks.find((week) => week.id === state.selectedFinanceWeek) || currentWeek || weeks[0];
 }
 
+function syncFinanceWeekToToday() {
+  const today = todayISO();
+  const todayMonth = today.slice(0, 7);
+  const currentWeek = getCurrentFinancialWeek(todayMonth);
+  const selectedWeek = getSelectedFinancialWeek();
+  const shouldMoveToCurrentWeek =
+    !state.selectedFinanceMonth ||
+    state.selectedFinanceMonth !== todayMonth ||
+    !selectedWeek ||
+    today > selectedWeek.endDate;
+
+  if (!currentWeek || !shouldMoveToCurrentWeek) return false;
+  state.selectedFinanceMonth = todayMonth;
+  state.selectedFinanceWeek = currentWeek.id;
+  return true;
+}
+
 function weekKey(week) {
   return `${week.year}-${String(week.month).padStart(2, "0")}-W${week.weekNumber}`;
 }
@@ -1119,12 +1137,17 @@ function activeAllocations(allocations = state.firmAllocations) {
 }
 
 function recordsForWeek(week) {
+  if (!week) return { sales: [], expenses: [], allocations: [] };
   const sales = activeSales().filter((sale) => isWithinPeriod(sale.date, week.startDate, week.endDate));
   const expenses = activeExpenses().filter((expense) =>
     isWithinPeriod(expense.paidDate || expense.date, week.startDate, week.endDate),
   );
   const allocations = activeAllocations().filter((allocation) => isWithinPeriod(allocation.date, week.startDate, week.endDate));
   return { sales, expenses, allocations };
+}
+
+function getOperationalRecords() {
+  return recordsForWeek(getSelectedFinancialWeek());
 }
 
 function summarizePeriod({ sales = [], expenses = [], allocations = [] } = {}) {
@@ -1345,8 +1368,8 @@ function calculateSale(sale, useSnapshot = true) {
   };
 }
 
-function summarize() {
-  const paidSales = activeSales().filter((sale) => sale.status === "Pago");
+function summarize(records = getOperationalRecords()) {
+  const paidSales = activeSales(records.sales).filter((sale) => sale.status === "Pago");
   const salesTotals = paidSales.reduce(
     (acc, sale) => {
       const calc = calculateSale(sale);
@@ -1365,8 +1388,8 @@ function summarize() {
     },
     { totalSold: 0, totalTax: 0, firmCash: 0, netCompany: 0, payableCommission: 0 },
   );
-  const expenseSummary = summarizeExpenses();
-  const cashCapitalTransfers = activeAllocations()
+  const expenseSummary = summarizeExpenses(records.expenses);
+  const cashCapitalTransfers = activeAllocations(records.allocations)
     .filter((allocation) => allocation.type === "cash_working_capital")
     .reduce((sum, allocation) => sum + Math.max(0, Number(allocation.amount || 0)), 0);
   return {
@@ -1401,10 +1424,10 @@ function summarizeExpenses(expenses = state.expenses) {
   );
 }
 
-function getFirmAllocationSummary() {
-  const paidSales = activeSales().filter((sale) => sale.status === "Pago");
+function getFirmAllocationSummary(records = getOperationalRecords()) {
+  const paidSales = activeSales(records.sales).filter((sale) => sale.status === "Pago");
   const firmRemainder = paidSales.reduce((sum, sale) => sum + calculateSale(sale).firm, 0);
-  const allocations = activeAllocations();
+  const allocations = activeAllocations(records.allocations);
   const sumType = (type) =>
     allocations
       .filter((item) => item.type === type)
@@ -2041,12 +2064,13 @@ function setActiveView(viewName) {
 }
 
 function renderExpenses() {
-  const expenses = [...activeExpenses()].sort((a, b) => {
+  const records = getOperationalRecords();
+  const expenses = [...activeExpenses(records.expenses)].sort((a, b) => {
     if (a.status !== b.status) return a.status === "Pendente" ? -1 : 1;
     return String(b.date || "").localeCompare(String(a.date || ""));
   });
-  const expenseSummary = summarizeExpenses();
-  const financialSummary = summarize();
+  const expenseSummary = summarizeExpenses(records.expenses);
+  const financialSummary = summarize(records);
   el.expenseCount.textContent = `${expenseSummary.pendingCount} a pagar - ${expenseSummary.paidCount} pagas`;
   el.expensePendingTotal.textContent = currency(expenseSummary.pending);
   el.expensePaidTotal.textContent = currency(expenseSummary.paid);
@@ -2111,7 +2135,7 @@ function renderExpenses() {
       if (!canManagePayments()) return;
       const expense = state.expenses.find((item) => item.id === button.dataset.id);
       if (!expense || expense.status !== "Pendente") return;
-      const totals = summarize();
+      const totals = summarize(getOperationalRecords());
       const amount = Number(expense.amount || 0);
       const workingCapital = Number(state.workingCapitalBalance || 0);
       let paymentSource = "cash";
@@ -2225,11 +2249,11 @@ function renderExpenses() {
   });
 }
 
-function getLinePaymentSummary() {
+function getLinePaymentSummary(records = getOperationalRecords()) {
   const summary = new Map();
   const totals = { line1: 0, line2: 0, line3: 0, total: 0 };
 
-  for (const sale of activeSales()) {
+  for (const sale of activeSales(records.sales)) {
     if (sale.status !== "Pago") continue;
     const calc = calculateSale(sale);
     const agentIds = getSaleAgentIds(sale);
@@ -2468,9 +2492,9 @@ function percentageOf(value, total) {
   return `${((Number(value || 0) / total) * 100).toFixed(2).replace(".", ",")}%`;
 }
 
-function getFirmReceiptData() {
-  const sales = activeSales().filter((sale) => sale.status === "Pago");
-  const expenses = activeExpenses();
+function getFirmReceiptData(records = getOperationalRecords()) {
+  const sales = activeSales(records.sales).filter((sale) => sale.status === "Pago");
+  const expenses = activeExpenses(records.expenses);
   const distribution = sales.reduce(
     (totals, sale) => {
       const calc = calculateSale(sale);
@@ -2495,7 +2519,7 @@ function getFirmReceiptData() {
     .filter((expense) => expense.status === "Pendente")
     .reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
   const cashBalance = distribution.cashGenerated - paidCashExpenses;
-  const allocationSummary = getFirmAllocationSummary();
+  const allocationSummary = getFirmAllocationSummary(records);
   const firmAfterExpenses = allocationSummary.available + cashBalance;
   const distributed =
     distribution.machineFee +
@@ -3144,9 +3168,10 @@ function renderLinePayments() {
 }
 
 function renderFirmCommission() {
-  const totals = summarize();
-  const paidSales = activeSales().filter((sale) => sale.status === "Pago");
-  const allocations = getFirmAllocationSummary();
+  const records = getOperationalRecords();
+  const totals = summarize(records);
+  const paidSales = activeSales(records.sales).filter((sale) => sale.status === "Pago");
+  const allocations = getFirmAllocationSummary(records);
   el.firmWorkingCapital.textContent = currency(allocations.workingCapital);
   el.firmRemainderTotal.textContent = currency(allocations.available);
   el.firmProlaboreMM.textContent = currency(allocations.prolaboreMM);
@@ -3171,7 +3196,7 @@ function renderFirmCommission() {
   el.firmCashBalanceDetail.textContent = currency(totals.cashBalance);
   el.firmCommissionTotal.textContent = currency(totals.netCompany);
   el.firmSaleCount.textContent = `${paidSales.length} vendas pagas`;
-  const visibleExpenses = activeExpenses();
+  const visibleExpenses = activeExpenses(records.expenses);
   el.firmExpenseCount.textContent = `${visibleExpenses.length} registros`;
 
   const paidWorkSales = paidSales;
@@ -3280,7 +3305,7 @@ function renderFirmCommission() {
   }
 
   el.firmAllocationHistory.innerHTML = "";
-  const visibleAllocations = activeAllocations();
+  const visibleAllocations = activeAllocations(records.allocations);
   if (!visibleAllocations.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state firm-empty";
@@ -4484,15 +4509,18 @@ el.deleteAllRecordsBtn.addEventListener("click", () => {
   if (!finalConfirmation) return;
 
   const now = new Date().toISOString();
-  const reason = "Fechamento semanal geral";
-  const activeSalesList = activeSales();
-  const activeExpensesList = activeExpenses();
-  const activeAllocationsList = activeAllocations();
+  const selectedWeek = getSelectedFinancialWeek();
+  const records = getOperationalRecords();
+  const reason = selectedWeek ? `Fechamento semanal ${weekKey(selectedWeek)}` : "Fechamento semanal";
+  const activeSalesList = activeSales(records.sales);
+  const activeExpensesList = activeExpenses(records.expenses);
+  const activeAllocationsList = activeAllocations(records.allocations);
   writeAuditLog("weekly_close.delete_all", {
     salesCount: activeSalesList.length,
     expensesCount: activeExpensesList.length,
     allocationsCount: activeAllocationsList.length,
-    totalSold: summarize().totalSold,
+    weekKey: selectedWeek ? weekKey(selectedWeek) : null,
+    totalSold: summarize(records).totalSold,
     mode: "soft_delete",
   });
   const markDeleted = (item) => {
@@ -4535,6 +4563,7 @@ el.undoResetBtn.addEventListener("click", () => {
   render();
 });
 
+syncFinanceWeekToToday();
 render();
 if (currentSession()) {
   loadStateFromCloud();
