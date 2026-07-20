@@ -79,6 +79,10 @@
 }
 
 .finance-week-shell {
+  display: grid;
+  grid-template-columns: auto minmax(260px, 1fr) auto;
+  align-items: center;
+  gap: 14px;
   padding: 14px;
 }
 
@@ -88,7 +92,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 12px;
 }
 
 .finance-month-control strong,
@@ -109,47 +112,42 @@
 }
 
 .finance-week-tabs {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  padding-bottom: 4px;
+  min-width: 0;
 }
 
-.finance-week-tab {
-  flex: 0 0 174px;
+.finance-week-menu {
   display: grid;
-  gap: 3px;
-  min-height: 82px;
-  padding: 12px;
-  border: 1px solid rgba(242, 205, 115, 0.18);
-  border-radius: 18px;
-  background: #0c0c0c;
-  color: #fff7df;
-  text-align: left;
-  cursor: pointer;
+  gap: 7px;
+  width: 100%;
 }
 
-.finance-week-tab.active {
-  border-color: #f5d372;
-  background: linear-gradient(145deg, #f5d372, #d4a64a);
-  color: #080808;
-}
-
-.finance-week-tab span,
-.finance-week-tab small {
+.finance-week-menu span {
+  color: #cdbb88;
   font-size: 11px;
-  color: inherit;
-  opacity: 0.82;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.finance-week-menu select {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid rgba(242, 205, 115, 0.28);
+  border-radius: 16px;
+  background: linear-gradient(145deg, #101010, #050505);
+  color: #fff7df;
+  font-size: 15px;
+  font-weight: 900;
+  padding: 0 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .finance-week-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  justify-items: end;
   gap: 10px;
-  margin-top: 10px;
   color: #d8c89e;
+  text-align: right;
 }
 
 .week-status-badge,
@@ -361,15 +359,20 @@
   }
 
   .finance-week-shell {
+    grid-template-columns: 1fr;
     margin-inline: 0;
     border-radius: 20px;
   }
 
-  .finance-week-tab {
-    flex-basis: 146px;
+  .finance-month-control {
+    margin-bottom: 0;
   }
 
-  .finance-week-summary,
+  .finance-week-summary {
+    justify-items: start;
+    text-align: left;
+  }
+
   .weekly-admin-danger {
     display: grid;
   }

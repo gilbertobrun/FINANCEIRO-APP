@@ -56,6 +56,7 @@ const SALE_FORMATS = {
 
 const defaults = {
   dataVersion: DATA_VERSION,
+  savedAt: null,
   weeklyClosedAt: null,
   selectedFinanceMonth: todayISO().slice(0, 7),
   selectedFinanceWeek: null,
@@ -115,6 +116,10 @@ let deferredInstallPrompt = null;
 let cloudSyncEnabled = false;
 let cloudSaveTimer = null;
 let cloudLoadPromise = null;
+let cloudSavePromise = null;
+let cloudUpdatedAt = null;
+let pendingCloudSave = false;
+let pendingCloudRetryTimer = null;
 let settingsAuditTimer = null;
 let realtimeSocket = null;
 let realtimeHeartbeatTimer = null;
@@ -390,6 +395,7 @@ function loadState() {
     };
     return {
       dataVersion: Number(parsed.dataVersion || 0),
+      savedAt: parsed.savedAt || null,
       weeklyClosedAt: parsed.weeklyClosedAt || null,
       selectedFinanceMonth: parsed.selectedFinanceMonth || todayISO().slice(0, 7),
       selectedFinanceWeek: parsed.selectedFinanceWeek || null,
@@ -441,6 +447,7 @@ function loadState() {
 }
 
 function saveState() {
+  state.savedAt = new Date().toISOString();
   localStorage.setItem(STORE_KEY, JSON.stringify(state));
   updateLastSyncLabel(new Date());
   scheduleCloudSave();
@@ -495,17 +502,74 @@ function sanitizeForCloud(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function itemTimestamp(item = {}) {
+  const value = item.updatedAt || item.updated_at || item.deleted_at || item.createdAt || item.created_at || item.paidDate || item.date || "";
+  const time = Date.parse(value);
+  return Number.isFinite(time) ? time : 0;
+}
+
+function mergeById(localItems = [], cloudItems = []) {
+  const merged = new Map();
+  [...cloudItems, ...localItems].forEach((item) => {
+    const key = item?.id || item?.weekKey || item?.archiveId;
+    if (!key) return;
+    const current = merged.get(key);
+    if (!current || itemTimestamp(item) >= itemTimestamp(current)) {
+      merged.set(key, item);
+    }
+  });
+  return [...merged.values()];
+}
+
+function mergeCloudStates(localData = {}, cloudData = {}) {
+  const localSavedAt = Date.parse(localData.savedAt || "") || 0;
+  const cloudSavedAt = Date.parse(cloudData.savedAt || "") || 0;
+  const base = cloudSavedAt > localSavedAt ? cloudData : localData;
+  return {
+    ...base,
+    dataVersion: Math.max(Number(localData.dataVersion || 0), Number(cloudData.dataVersion || 0), DATA_VERSION),
+    settings: { ...(cloudData.settings || {}), ...(localData.settings || {}) },
+    profiles: { ...(cloudData.profiles || {}), ...(localData.profiles || {}) },
+    agents: mergeById(localData.agents, cloudData.agents),
+    sales: mergeById(localData.sales, cloudData.sales),
+    expenses: mergeById(localData.expenses, cloudData.expenses),
+    firmAllocations: mergeById(localData.firmAllocations, cloudData.firmAllocations),
+    weeklyClosings: mergeById(localData.weeklyClosings, cloudData.weeklyClosings),
+    weekArchives: mergeById(localData.weekArchives, cloudData.weekArchives),
+    capitalChangeHistory: mergeById(localData.capitalChangeHistory, cloudData.capitalChangeHistory),
+    selectedFinanceMonth: localData.selectedFinanceMonth || cloudData.selectedFinanceMonth || todayISO().slice(0, 7),
+    selectedFinanceWeek: localData.selectedFinanceWeek || cloudData.selectedFinanceWeek || null,
+    calendarMonth: localData.calendarMonth || cloudData.calendarMonth || todayISO().slice(0, 7),
+    calendarSelectedDate: localData.calendarSelectedDate || cloudData.calendarSelectedDate || todayISO(),
+    workingCapitalBalance:
+      localSavedAt >= cloudSavedAt
+        ? Number(localData.workingCapitalBalance ?? cloudData.workingCapitalBalance ?? WORKING_CAPITAL)
+        : Number(cloudData.workingCapitalBalance ?? localData.workingCapitalBalance ?? WORKING_CAPITAL),
+    capitalGoal:
+      localSavedAt >= cloudSavedAt
+        ? Number(localData.capitalGoal ?? cloudData.capitalGoal ?? WORKING_CAPITAL_GOAL)
+        : Number(cloudData.capitalGoal ?? localData.capitalGoal ?? WORKING_CAPITAL_GOAL),
+    savedAt: new Date(Math.max(localSavedAt, cloudSavedAt, Date.now())).toISOString(),
+  };
+}
+
 async function loadStateFromCloud({ silent = false } = {}) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return;
   if (cloudLoadPromise) return cloudLoadPromise;
   cloudLoadPromise = (async () => {
     try {
-      const response = await fetch(`${SUPABASE_STATE_ENDPOINT}?id=eq.main&select=data`, {
+      if (pendingCloudSave) {
+        await saveStateToCloud();
+      } else if (cloudSavePromise) {
+        await cloudSavePromise;
+      }
+      const response = await fetch(`${SUPABASE_STATE_ENDPOINT}?id=eq.main&select=data,updated_at`, {
         headers: supabaseHeaders({ Accept: "application/json" }),
       });
       if (!response.ok) throw new Error(`Supabase leitura ${response.status}`);
       const rows = await response.json();
-      const cloudData = rows?.[0]?.data;
+      const cloudRow = rows?.[0];
+      const cloudData = cloudRow?.data;
       if (hasMeaningfulCloudState(cloudData)) {
         localStorage.setItem(STORE_KEY, JSON.stringify(cloudData));
         state = loadState();
@@ -515,12 +579,16 @@ async function loadStateFromCloud({ silent = false } = {}) {
         applyDataMigrations();
         syncFinanceWeekToToday();
         cloudSyncEnabled = true;
+        cloudUpdatedAt = cloudRow?.updated_at || cloudData.savedAt || new Date().toISOString();
+        pendingCloudSave = false;
+        window.clearTimeout(pendingCloudRetryTimer);
         updateLastSyncLabel(new Date());
         render();
         if (!silent) showTransientMessage("Dados atualizados com sucesso.");
         return;
       }
       cloudSyncEnabled = true;
+      cloudUpdatedAt = cloudRow?.updated_at || null;
       scheduleCloudSave(0);
       updateLastSyncLabel(new Date());
     } catch (error) {
@@ -536,28 +604,71 @@ async function loadStateFromCloud({ silent = false } = {}) {
 
 function scheduleCloudSave(delay = 800) {
   if (!cloudSyncEnabled || !SUPABASE_URL || !SUPABASE_KEY) return;
+  pendingCloudSave = true;
+  if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Salvando na nuvem...";
   window.clearTimeout(cloudSaveTimer);
   cloudSaveTimer = window.setTimeout(saveStateToCloud, delay);
 }
 
 async function saveStateToCloud() {
   if (!cloudSyncEnabled || !SUPABASE_URL || !SUPABASE_KEY) return;
+  if (cloudSavePromise) return cloudSavePromise;
   try {
-    const response = await fetch(SUPABASE_STATE_ENDPOINT, {
-      method: "POST",
-      headers: supabaseHeaders({
-        Prefer: "resolution=merge-duplicates",
-      }),
-      body: JSON.stringify({
-        id: "main",
-        data: sanitizeForCloud(state),
-        updated_at: new Date().toISOString(),
-      }),
-    });
-    if (!response.ok) throw new Error(`Supabase gravacao ${response.status}`);
+    cloudSavePromise = (async () => {
+      const localSnapshot = sanitizeForCloud(state);
+      const remoteResponse = await fetch(`${SUPABASE_STATE_ENDPOINT}?id=eq.main&select=data,updated_at`, {
+        headers: supabaseHeaders({ Accept: "application/json" }),
+      });
+      if (!remoteResponse.ok) throw new Error(`Supabase verificacao ${remoteResponse.status}`);
+      const remoteRow = (await remoteResponse.json())?.[0];
+      let dataToSave = localSnapshot;
+      const remoteUpdatedAt = remoteRow?.updated_at || null;
+      if (remoteRow?.data && remoteUpdatedAt && cloudUpdatedAt && Date.parse(remoteUpdatedAt) > Date.parse(cloudUpdatedAt)) {
+        dataToSave = mergeCloudStates(localSnapshot, remoteRow.data);
+        state = loadStateFromObject(dataToSave);
+        localStorage.setItem(STORE_KEY, JSON.stringify(state));
+        render();
+      }
+
+      const savedAt = new Date().toISOString();
+      dataToSave.savedAt = savedAt;
+      state.savedAt = savedAt;
+      const response = await fetch(`${SUPABASE_STATE_ENDPOINT}?on_conflict=id`, {
+        method: "POST",
+        headers: supabaseHeaders({
+          Prefer: "resolution=merge-duplicates,return=representation",
+        }),
+        body: JSON.stringify({
+          id: "main",
+          data: sanitizeForCloud(dataToSave),
+          updated_at: savedAt,
+        }),
+      });
+      if (!response.ok) throw new Error(`Supabase gravacao ${response.status}`);
+      const savedRow = (await response.json())?.[0];
+      cloudUpdatedAt = savedRow?.updated_at || savedAt;
+      pendingCloudSave = false;
+      window.clearTimeout(pendingCloudRetryTimer);
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      updateLastSyncLabel(new Date());
+      return true;
+    })();
+    return await cloudSavePromise;
   } catch (error) {
+    pendingCloudSave = true;
+    if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Pendente de salvar na nuvem";
+    window.clearTimeout(pendingCloudRetryTimer);
+    pendingCloudRetryTimer = window.setTimeout(saveStateToCloud, 5000);
     console.warn("Nao foi possivel salvar no Supabase.", error);
+    return false;
+  } finally {
+    cloudSavePromise = null;
   }
+}
+
+function loadStateFromObject(data) {
+  localStorage.setItem(STORE_KEY, JSON.stringify(data));
+  return loadState();
 }
 
 async function writeAuditLog(action, details = {}) {
@@ -1139,9 +1250,7 @@ function activeAllocations(allocations = state.firmAllocations) {
 function recordsForWeek(week) {
   if (!week) return { sales: [], expenses: [], allocations: [] };
   const sales = activeSales().filter((sale) => isWithinPeriod(sale.date, week.startDate, week.endDate));
-  const expenses = activeExpenses().filter((expense) =>
-    isWithinPeriod(expense.paidDate || expense.date, week.startDate, week.endDate),
-  );
+  const expenses = activeExpenses().filter((expense) => isWithinPeriod(expense.date, week.startDate, week.endDate));
   const allocations = activeAllocations().filter((allocation) => isWithinPeriod(allocation.date, week.startDate, week.endDate));
   return { sales, expenses, allocations };
 }
@@ -1729,26 +1838,28 @@ function renderFinanceWeekSelector() {
   const selectedWeek = getSelectedFinancialWeek();
   if (el.financeMonthLabel) el.financeMonthLabel.textContent = monthLabel(monthKey);
   if (el.financeWeekTabs) {
-    el.financeWeekTabs.innerHTML = weeks
+    const weekOptions = weeks
       .map((week) => {
         const status = financialWeekStatus(week);
         const isActive = selectedWeek?.id === week.id;
         const isCurrent = getCurrentFinancialWeek(monthKey)?.id === week.id && todayISO().slice(0, 7) === monthKey;
-        return `
-          <button class="finance-week-tab ${isActive ? "active" : ""} ${isCurrent ? "current" : ""}" type="button" data-week-id="${week.id}">
-            <strong>${week.label}</strong>
-            <span>${DATE.format(isoToLocalDate(week.startDate))} - ${DATE.format(isoToLocalDate(week.endDate))}</span>
-            <small>${status}</small>
-          </button>
-        `;
+        return `<option value="${week.id}" ${isActive ? "selected" : ""}>
+          ${week.label} - ${DATE.format(isoToLocalDate(week.startDate))} a ${DATE.format(isoToLocalDate(week.endDate))}${isCurrent ? " - atual" : ""} - ${status}
+        </option>`;
       })
       .join("");
-    el.financeWeekTabs.querySelectorAll(".finance-week-tab").forEach((button) => {
-      button.addEventListener("click", () => {
-        state.selectedFinanceWeek = button.dataset.weekId;
-        saveState();
-        render();
-      });
+    el.financeWeekTabs.innerHTML = `
+      <label class="finance-week-menu">
+        <span>Semana do fechamento</span>
+        <select id="financeWeekSelect" aria-label="Selecionar semana financeira">
+          ${weekOptions}
+        </select>
+      </label>
+    `;
+    el.financeWeekTabs.querySelector("#financeWeekSelect")?.addEventListener("change", (event) => {
+      state.selectedFinanceWeek = event.target.value;
+      saveState();
+      render();
     });
   }
   if (selectedWeek) {
@@ -1814,7 +1925,7 @@ function renderWeeklyReport() {
         .filter((sale) => sale.date === day.date)
         .reduce((sum, sale) => sum + Number(sale.amount || 0), 0);
       const dailyExpenses = paidExpenses
-        .filter((expense) => expense.paidDate === day.date)
+        .filter((expense) => expense.date === day.date)
         .reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
       const dailyPendingExpenses = pendingExpenses
         .filter((expense) => expense.date === day.date)
@@ -1979,7 +2090,7 @@ function renderFinancialCalendar() {
     ...days.map((date) => {
       const inMonth = date.slice(0, 7) === monthKey;
       const daySales = activeSales().filter((sale) => sale.date === date);
-      const dayExpenses = activeExpenses().filter((expense) => (expense.paidDate || expense.date) === date);
+      const dayExpenses = activeExpenses().filter((expense) => expense.date === date);
       const hasClosing = weeks.some((week) => week.closingDate === date) || (state.weeklyClosings || []).some((closing) => closing.endDate === date && closing.status === "Fechada");
       const isFriday = isoToLocalDate(date).getDay() === 5;
       const isToday = date === todayISO();
@@ -2013,7 +2124,7 @@ function renderFinancialCalendar() {
 function renderCalendarDayDetails() {
   const date = state.calendarSelectedDate || todayISO();
   const sales = activeSales().filter((sale) => sale.date === date);
-  const expenses = activeExpenses().filter((expense) => (expense.paidDate || expense.date) === date);
+  const expenses = activeExpenses().filter((expense) => expense.date === date);
   const salesTotal = sales.reduce((sum, sale) => sum + Number(sale.amount || 0), 0);
   const expenseTotal = expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
   const monthWeeks = getFinancialWeeks(date.slice(0, 7));
@@ -3948,8 +4059,8 @@ el.loginForm.addEventListener("submit", async (event) => {
       return;
     }
     el.loginPassword.value = "";
+    await loadStateFromCloud({ silent: true });
     render();
-    loadStateFromCloud();
     setupRealtimeSubscription();
   } catch (error) {
     console.warn("Falha no login.", error);
@@ -4571,7 +4682,13 @@ if (currentSession()) {
 }
 
 window.addEventListener("online", () => refreshFromCloud({ manual: false }));
-window.addEventListener("beforeunload", cleanupRealtime);
+window.addEventListener("beforeunload", () => {
+  if (pendingCloudSave) saveStateToCloud();
+  cleanupRealtime();
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden" && pendingCloudSave) saveStateToCloud();
+});
 window.setInterval(() => {
   if (currentSession() && document.visibilityState === "visible") refreshFromCloud({ manual: false });
 }, 60000);
