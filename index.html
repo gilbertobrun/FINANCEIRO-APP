@@ -24,7 +24,7 @@
           </div>
         </div>
         <label>
-          Usuario ou e-mail
+          Usuário ou e-mail
           <input id="loginUser" type="text" autocomplete="username" placeholder="Digite seu login ou e-mail" required />
         </label>
         <label>
@@ -53,30 +53,23 @@
 
         <div class="mobile-user-card">
           <span>Acesso atual</span>
-          <strong id="menuUserName">Usuario</strong>
+          <strong id="menuUserName">Usuário</strong>
           <small id="menuUserRole">Perfil</small>
         </div>
 
-        <nav class="menu-list" aria-label="Navegacao principal">
+        <nav class="menu-list" aria-label="Navegação principal">
           <span class="menu-section-title">Principal</span>
-          <button class="menu-item active" type="button" data-view-target="dashboard"><span class="menu-icon icon-home-logo">F</span><span class="menu-copy"><strong>Dashboard</strong><small>Painel geral da financeira</small></span></button>
-          <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-vendors" aria-hidden="true"></span><span class="menu-copy"><strong>Clientes</strong><small>Historico e consultas</small></span></button>
+          <button class="menu-item active" type="button" data-view-target="dashboard"><span class="menu-icon icon-home-logo">F</span><span class="menu-copy"><strong>Tela de Início</strong><small>Resumo financeiro</small></span></button>
+          <button class="menu-item" type="button" data-view-target="sale" data-admin-only><span class="menu-icon icon-sale" aria-hidden="true"></span><span class="menu-copy"><strong>Vendas</strong><small>Registrar e editar vendas</small></span></button>
+          <button class="menu-item" type="button" data-view-target="expenses" data-admin-only><span class="menu-icon icon-expense" aria-hidden="true"></span><span class="menu-copy"><strong>Despesas</strong><small>Registrar e pagar despesas</small></span></button>
+          <button class="menu-item" type="button" data-view-target="firmCommission" data-admin-only><span class="menu-icon icon-firm" aria-hidden="true"></span><span class="menu-copy"><strong>Firma</strong><small>Caixa e movimentações</small></span></button>
+          <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Histórico</strong><small>Todas as vendas</small></span></button>
+          <button class="menu-item" type="button" data-view-target="linePayments"><span class="menu-icon icon-sale" aria-hidden="true"></span><span class="menu-copy"><strong>Comprovantes</strong><small>Folha de pagamento</small></span></button>
+          <button class="menu-item" type="button" data-view-target="weeklyClosings" data-admin-only><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Fechamento de Caixa</strong><small>Histórico de fechamentos</small></span></button>
 
-          <span class="menu-section-title">Operacao</span>
-          <button class="menu-item" type="button" data-view-target="firmCommission"><span class="menu-icon icon-firm" aria-hidden="true"></span><span class="menu-copy"><strong>Giro de Capital</strong><small>Saldo e movimentacoes</small></span></button>
-          <button class="menu-item" type="button" data-view-target="sale" data-admin-only><span class="menu-icon icon-sale" aria-hidden="true"></span><span class="menu-copy"><strong>Emprestimos</strong><small>Registrar venda</small></span></button>
-          <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Parcelas</strong><small>Acompanhamento por venda</small></span></button>
-          <button class="menu-item" type="button" data-view-target="linePayments"><span class="menu-icon icon-sale" aria-hidden="true"></span><span class="menu-copy"><strong>Recebimentos</strong><small>Folha dos vendedores</small></span></button>
-          <button class="menu-item" type="button" data-view-target="expenses"><span class="menu-icon icon-expense" aria-hidden="true"></span><span class="menu-copy"><strong>Despesas</strong><small>Lancar e pagar despesas</small></span></button>
-          <button class="menu-item" type="button" data-view-target="capitalSettings" data-admin-only><span class="menu-icon icon-settings" aria-hidden="true"></span><span class="menu-copy"><strong>Edicao de Giro de Capital e Meta</strong><small>Capital, meta e historico</small></span></button>
-
-          <span class="menu-section-title">Gestao</span>
-          <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-simulate" aria-hidden="true"></span><span class="menu-copy"><strong>Relatorios</strong><small>Resumo e historico</small></span></button>
-          <button class="menu-item" type="button" data-view-target="calendar"><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Calendario Financeiro</strong><small>Mes, semanas e lancamentos</small></span></button>
-          <button class="menu-item" type="button" data-view-target="weeklyClosings"><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Historico de Fechamentos</strong><small>Semanas fechadas</small></span></button>
-          <button class="menu-item" type="button" data-view-target="firmCommission"><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Comprovantes</strong><small>Documentos para envio</small></span></button>
-          <button class="menu-item" type="button" data-view-target="settings" data-admin-only><span class="menu-icon icon-vendors" aria-hidden="true"></span><span class="menu-copy"><strong>Usuarios</strong><small>Acessos e permissoes</small></span></button>
-          <button class="menu-item" type="button" data-view-target="settings" data-admin-only><span class="menu-icon icon-settings" aria-hidden="true"></span><span class="menu-copy"><strong>Configuracoes</strong><small>Ajustes do sistema</small></span></button>
+          <span class="menu-section-title">Configurações</span>
+          <button class="menu-item" type="button" data-view-target="settings" data-admin-only><span class="menu-icon icon-vendors" aria-hidden="true"></span><span class="menu-copy"><strong>Edição de Usuários</strong><small>Agentes e permissões</small></span></button>
+          <button class="menu-item" type="button" data-view-target="capitalSettings" data-admin-only><span class="menu-icon icon-settings" aria-hidden="true"></span><span class="menu-copy"><strong>Edição de Giro de Capital</strong><small>Capital, meta e histórico</small></span></button>
 
           <span class="menu-section-title">Conta</span>
           <button class="menu-item menu-logout" type="button" data-logout><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Sair</strong><small>Encerrar acesso</small></span></button>
@@ -100,7 +93,7 @@
             <span class="mini-logo">F</span>
             <div>
               <p class="eyebrow">FINANCEIRA consignado</p>
-              <h1 id="viewTitle">Dashboard</h1>
+              <h1 id="viewTitle">Tela de Início</h1>
             </div>
           </div>
           <div class="topbar-actions">
@@ -109,11 +102,11 @@
                 <span class="sync-icon" aria-hidden="true"></span>
                 <span>Atualizar</span>
               </button>
-              <small id="lastSyncLabel">Ultima atualizacao: agora</small>
+              <small id="lastSyncLabel">Dados sincronizados: agora</small>
             </div>
-            <button id="exportCsvBtn" class="secondary-button" type="button" title="Exportar vendas e despesas para CSV">Exportar CSV</button>
+            <button id="exportCsvBtn" class="secondary-button admin-top-action" type="button" title="Exportar vendas e despesas para CSV" data-admin-only>Exportar CSV</button>
             <button id="undoResetBtn" class="ghost-button hidden" type="button" title="Desfazer ultima restauracao" data-admin-only>Desfazer restaurar</button>
-            <button id="resetDemoBtn" class="ghost-button" type="button" title="Restaurar dados de exemplo" data-admin-only>Restaurar exemplo</button>
+            <button id="resetDemoBtn" class="ghost-button admin-top-action" type="button" title="Restaurar dados de exemplo" data-admin-only>Restaurar exemplo</button>
             <button id="logoutBtn" class="ghost-button" type="button" title="Sair do acesso">Sair</button>
           </div>
         </header>
@@ -126,7 +119,7 @@
           </div>
           <div id="financeWeekTabs" class="finance-week-tabs" role="tablist"></div>
           <div class="finance-week-summary">
-            <span id="selectedWeekPeriod">Periodo da semana</span>
+            <span id="selectedWeekPeriod">Período da semana</span>
             <strong id="selectedWeekStatus">Em andamento</strong>
           </div>
         </section>
@@ -141,17 +134,54 @@
               </div>
             </div>
             <div class="home-total">
-              <span>Total vendido</span>
+              <span>Saldo de Vendas</span>
               <strong id="totalSold">R$ 0,00</strong>
             </div>
           </section>
 
-          <section class="capital-overview" aria-label="Capital atual">
-            <div class="capital-overview-main">
-              <span>Capital atual</span>
+          <section class="home-actions" aria-label="Ações rápidas">
+            <div class="section-heading full-row">
+              <span>Atalhos</span>
+              <h2>Ações rápidas</h2>
+            </div>
+            <button class="app-action-card primary-action" type="button" data-view-target="sale" data-admin-only>
+              <span class="action-icon icon-sale" aria-hidden="true"></span>
+              <strong>Registrar Venda</strong>
+              <small>Lançar contrato e calcular comissões</small>
+            </button>
+            <button class="app-action-card" type="button" data-view-target="expenses" data-admin-only>
+              <span class="action-icon icon-expense" aria-hidden="true"></span>
+              <strong>Registrar Despesa</strong>
+              <small>Lançar e acompanhar gastos</small>
+            </button>
+            <button class="app-action-card" type="button" data-view-target="firmCommission" data-admin-only>
+              <span class="action-icon icon-firm" aria-hidden="true"></span>
+              <strong>Abrir Firma</strong>
+              <small>Caixa, sobra e movimentações</small>
+            </button>
+            <button class="app-action-card" type="button" data-view-target="linePayments">
+              <span class="action-icon icon-vendors" aria-hidden="true"></span>
+              <strong>Folha de Pagamento</strong>
+              <small>Ver valores a pagar dos vendedores</small>
+            </button>
+          </section>
+
+          <section class="capital-overview" aria-label="Saldos principais">
+            <article class="capital-overview-main balance-card">
+              <span>Saldo de Vendas</span>
+              <strong id="dashboardSalesBalance">R$ 0,00</strong>
+              <small id="dashboardSalesPeriod">Período selecionado</small>
+            </article>
+            <article class="capital-overview-main balance-card">
+              <span>Saldo de Giro de Capital</span>
               <strong id="dashboardCapitalCurrent">R$ 0,00</strong>
               <small id="dashboardCapitalStatus">Acompanhamento da meta financeira</small>
-            </div>
+            </article>
+            <article class="capital-overview-main balance-card">
+              <span>Saldo de Caixa</span>
+              <strong id="dashboardCashBalance">R$ 0,00</strong>
+              <small id="dashboardCashUpdated">Dados sincronizados</small>
+            </article>
             <div class="capital-overview-grid">
               <article>
                 <span>Meta</span>
@@ -171,33 +201,23 @@
             </div>
           </section>
 
-          <section class="home-actions" aria-label="Acoes principais">
-            <button class="app-action-card primary-action" type="button" data-view-target="sale" data-admin-only>
-              <span class="action-icon icon-sale" aria-hidden="true"></span>
-              <strong>Registrar vendas</strong>
-              <small>Lancar contrato e calcular comissoes</small>
-            </button>
-            <button class="app-action-card" type="button" data-view-target="simulation">
-              <span class="action-icon icon-simulate" aria-hidden="true"></span>
-              <strong>Simular venda</strong>
-              <small>Testar formatos e vendedores</small>
-            </button>
-            <button class="app-action-card" type="button" data-view-target="linePayments">
-              <span class="action-icon icon-vendors" aria-hidden="true"></span>
-              <strong>Folha de pagamento</strong>
-              <small>Ver valores a pagar dos vendedores</small>
-            </button>
-          </section>
-
-          <section class="feed-panel" aria-label="Feed financeiro">
+          <section class="feed-panel" aria-label="Resumo Financeiro">
             <div class="feed-heading">
-              <h2>Feed</h2>
-              <span>Resumo de caixa</span>
+              <h2>Resumo Financeiro</h2>
+              <span>Período selecionado</span>
             </div>
             <div class="feed-list">
+              <article class="feed-item">
+                <span>Saldo de Vendas</span>
+                <strong id="feedSalesBalance">R$ 0,00</strong>
+              </article>
               <article class="feed-item capital">
-                <span>Giro de capital</span>
+                <span>Saldo de Giro de Capital</span>
                 <strong id="workingCapital">R$ 17.148,00</strong>
+              </article>
+              <article class="feed-item subtotal">
+                <span>Saldo de Caixa</span>
+                <strong id="cashBalance">R$ 0,00</strong>
               </article>
               <article class="feed-item">
                 <span>Valor a pagar aos vendedores</span>
@@ -211,18 +231,25 @@
                 <span>Caixa firma</span>
                 <strong id="firmCash">R$ 0,00</strong>
               </article>
-              <article class="feed-item subtotal">
-                <span>Saldo do caixa</span>
-                <strong id="cashBalance">R$ 0,00</strong>
-              </article>
             </div>
+          </section>
+
+          <section class="panel dashboard-activity-panel" aria-label="Feed financeiro recente">
+            <div class="panel-heading">
+              <div>
+                <span>Movimentações</span>
+                <h2>Feed Financeiro</h2>
+              </div>
+              <button class="ghost-button" type="button" data-view-target="history">Ver todos</button>
+            </div>
+            <div id="dashboardActivityFeed" class="dashboard-activity-feed"></div>
           </section>
 
           <section class="weekly-report" aria-label="Relatorio semanal simplificado">
             <div class="weekly-report-heading">
               <div>
-                <span>Segunda a sexta</span>
-                <h2>Relatorio semanal</h2>
+              <span>Segunda a sexta</span>
+              <h2>Relatório semanal</h2>
               </div>
               <strong id="weeklyPeriod">Semana atual</strong>
             </div>
@@ -255,7 +282,7 @@
               <strong id="netCompany">R$ 0,00</strong>
             </article>
             <article class="metric">
-              <span>Imposto bancario</span>
+              <span>Imposto bancário</span>
               <strong id="totalTax">R$ 0,00</strong>
             </article>
             <button class="quick-card" type="button" data-view-target="expenses">
@@ -264,10 +291,10 @@
             </button>
             <button class="quick-card" type="button" data-view-target="firmCommission">
               <strong>Firma</strong>
-              <span>Comissao, caixa e comprovante</span>
+              <span>Comissão, caixa e comprovante</span>
             </button>
             <button class="quick-card" type="button" data-view-target="history">
-              <strong>Historico</strong>
+              <strong>Histórico</strong>
               <span>Consultar vendas registradas</span>
             </button>
           </section>
@@ -321,7 +348,7 @@
             <section class="sale-operation-hero" aria-label="Resumo do lancamento">
               <div>
                 <span>Nova operacao</span>
-                <strong>Registrar emprestimo</strong>
+                <strong>Registrar empréstimo</strong>
                 <small>Preencha o valor, formato e vendedores para calcular automaticamente.</small>
               </div>
               <div class="sale-operation-total">
@@ -394,6 +421,17 @@
 
             <button class="primary-button" type="submit">Salvar venda</button>
           </form>
+
+          <section class="panel sale-list-panel">
+            <div class="panel-heading">
+              <div>
+                <span>Consulta</span>
+                <h2>Vendas lançadas</h2>
+              </div>
+              <button class="ghost-button" type="button" data-view-target="history">Ver Histórico</button>
+            </div>
+            <div id="salePageCards" class="history-card-list compact-list"></div>
+          </section>
         </section>
 
         <section class="app-view" data-view="expenses">
@@ -489,7 +527,7 @@
 
           <section class="panel table-panel">
             <div class="panel-heading">
-              <h2>Historico para envio ao vendedor</h2>
+              <h2>Histórico para envio ao vendedor</h2>
               <span id="linePaymentCount">0 agentes</span>
             </div>
             <div class="payment-card-list" id="linePaymentsTable"></div>
@@ -630,7 +668,7 @@
           <div class="admin-page-heading">
             <div>
               <span class="section-kicker">Administrativo</span>
-              <h2>Edicao de Giro de Capital e Meta</h2>
+              <h2>Edição de Giro de Capital e Meta</h2>
               <p>Atualize o giro atual e a meta financeira com justificativa e registro de auditoria.</p>
             </div>
           </div>
@@ -649,10 +687,10 @@
                 <label>Novo valor
                   <input id="capitalTurnoverInput" type="text" inputmode="numeric" placeholder="R$ 0,00" required />
                 </label>
-                <label>Motivo da alteracao
+                <label>Motivo da alteração
                   <textarea id="capitalTurnoverReason" rows="3" minlength="5" placeholder="Ex: Correcao de capital disponivel" required></textarea>
                 </label>
-                <button id="capitalTurnoverSaveBtn" class="primary-button" type="submit">Salvar alteracao</button>
+                <button id="capitalTurnoverSaveBtn" class="primary-button" type="submit">Salvar alteração</button>
               </form>
             </article>
 
@@ -676,7 +714,7 @@
                 <label>Nova meta
                   <input id="capitalGoalInput" type="text" inputmode="numeric" placeholder="R$ 0,00" required />
                 </label>
-                <label>Motivo da alteracao
+                <label>Motivo da alteração
                   <textarea id="capitalGoalReason" rows="3" minlength="5" placeholder="Ex: Ajuste da meta mensal" required></textarea>
                 </label>
                 <button id="capitalGoalSaveBtn" class="primary-button" type="submit">Salvar meta</button>
@@ -688,7 +726,7 @@
             <div class="panel-heading">
               <div>
                 <span>Auditoria</span>
-                <h2>Historico de alteracoes</h2>
+                <h2>Histórico de alterações</h2>
               </div>
               <span id="capitalHistoryCount">0 registros</span>
             </div>
@@ -699,8 +737,8 @@
         <section class="app-view" data-view="history">
           <section class="page-hero history-hero" aria-label="Historico e relatorios">
             <div>
-              <span>Relatorios</span>
-              <strong>Historico financeiro</strong>
+              <span>Histórico</span>
+              <strong>Todas as vendas</strong>
               <small>Consulte vendas, formatos, caixa da firma e prova real do dinheiro.</small>
             </div>
             <button class="page-hero-action" type="button" data-view-target="firmCommission">Ver firma</button>
@@ -708,7 +746,7 @@
 
           <section class="panel history-panel">
             <div class="panel-heading">
-              <h2>Vendas</h2>
+              <h2>Todas as vendas</h2>
               <div class="history-filters">
                 <select id="weekArchiveFilter" title="Escolher semana">
                   <option value="current">Semana atual</option>
@@ -752,7 +790,7 @@
             <section class="proof-card" aria-label="Prova real do financeiro">
               <div class="proof-card-heading">
                 <div>
-                  <span>Conferencia geral</span>
+                  <span>Conferência geral</span>
                   <h3>Prova real</h3>
                 </div>
                 <strong id="proofStatus">Valores conferidos</strong>
@@ -777,12 +815,12 @@
             <div class="weekly-close" data-admin-only>
               <div>
                 <strong>Fechamento semanal</strong>
-                <span>Apaga definitivamente todas as vendas e despesas. Nao existe recuperacao.</span>
+              <span>Remove os dados operacionais da semana selecionada. A auditoria técnica será preservada.</span>
               </div>
               <button id="deleteAllRecordsBtn" type="button">Apagar tudo definitivamente</button>
             </div>
             <button id="recoverDeletedSalesBtn" class="secondary-button recover-sales-button" type="button" data-admin-only>
-              Recuperar vendas apagadas
+              Recuperar vendas removidas
             </button>
             <div id="salesCards" class="history-card-list"></div>
           </section>
@@ -792,7 +830,7 @@
           <section class="page-hero closings-hero" aria-label="Historico de fechamentos">
             <div>
               <span>Fechamentos</span>
-              <strong>Historico semanal</strong>
+              <strong>Histórico de fechamentos</strong>
               <small>Consulte semanas fechadas, totais consolidados e reabra apenas com permissao administrativa.</small>
             </div>
             <button id="closeSelectedWeekBtn" class="page-hero-action" type="button" data-admin-only>Fechar semana</button>
@@ -813,7 +851,7 @@
             <div class="panel-heading">
               <div>
                 <span>Auditoria semanal</span>
-                <h2>Historico de Fechamentos</h2>
+                <h2>Histórico de Fechamentos</h2>
               </div>
               <div class="history-filters">
                 <select id="closingMonthFilter" title="Mes dos fechamentos"></select>
@@ -826,7 +864,7 @@
           <section class="weekly-admin-danger panel" data-admin-only>
             <div>
               <span>Administrativo</span>
-              <h2>Exclusao controlada por periodo</h2>
+              <h2>Exclusão controlada por período</h2>
               <p>Use somente para limpar lancamentos operacionais da semana selecionada. A auditoria permanece preservada.</p>
             </div>
             <button id="deleteSelectedWeekBtn" type="button">Apagar dados da semana</button>
@@ -873,7 +911,7 @@
         <section class="app-view" data-view="settings" data-admin-only>
           <section class="page-hero settings-hero" aria-label="Configuracoes">
             <div>
-              <span>Configuracoes</span>
+              <span>Configurações</span>
               <strong>Agentes e percentuais</strong>
               <small>Cadastre vendedores, organize linhas e confira regras operacionais do app.</small>
             </div>
@@ -916,11 +954,11 @@
               <label>Imposto bancario <input id="bankTaxRate" type="number" min="0" step="0.01" /></label>
               <label>Caixa firma <input id="firmCashRate" type="number" min="0" step="0.01" /></label>
               <label>Linha geral <input type="number" value="40" disabled /></label>
-              <label>Comissao vendedor 1 <input id="line1Rate" type="number" value="15" disabled /></label>
-              <label>Comissao vendedor 2 <input id="line2Rate" type="number" value="25" disabled /></label>
+              <label>Comissão vendedor 1 <input id="line1Rate" type="number" value="15" disabled /></label>
+              <label>Comissão vendedor 2 <input id="line2Rate" type="number" value="25" disabled /></label>
               <label class="hidden">Regra antiga vendedor 2 <input id="line2With3Rate" type="number" min="0" step="0.01" /></label>
               <label class="hidden">Regra antiga vendedor 3 <input id="line3Rate" type="number" min="0" step="0.01" /></label>
-              <label>Comissao total com 3 vendedores <input type="number" value="40" disabled /></label>
+              <label>Comissão total com 3 vendedores <input type="number" value="40" disabled /></label>
             </form>
           </aside>
           </div>
@@ -928,15 +966,13 @@
       </section>
 
       <nav class="mobile-menu" aria-label="Menu inferior">
-        <button class="menu-item active" type="button" data-view-target="dashboard"><span class="menu-icon icon-home-logo">F</span><span>Inicio</span></button>
-        <button class="menu-item" type="button" data-view-target="simulation"><span class="menu-icon icon-simulate" aria-hidden="true"></span><span>Simular</span></button>
-        <button class="menu-item" type="button" data-view-target="sale" data-admin-only><span class="menu-icon icon-sale" aria-hidden="true"></span><span>Venda</span></button>
-        <button class="menu-item" type="button" data-view-target="expenses"><span class="menu-icon icon-expense" aria-hidden="true"></span><span>Despesas</span></button>
-        <button class="menu-item" type="button" data-view-target="linePayments"><span class="menu-icon icon-vendors" aria-hidden="true"></span><span>Vendedores</span></button>
-        <button class="menu-item" type="button" data-view-target="firmCommission"><span class="menu-icon icon-firm" aria-hidden="true"></span><span>Firma</span></button>
-        <button class="menu-item" type="button" data-view-target="calendar"><span class="menu-icon icon-history" aria-hidden="true"></span><span>Agenda</span></button>
-        <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-history" aria-hidden="true"></span><span>Historico</span></button>
-        <button class="menu-item" type="button" data-view-target="settings" data-admin-only><span class="menu-icon icon-settings" aria-hidden="true"></span><span>Config.</span></button>
+        <button class="menu-item active" type="button" data-view-target="dashboard"><span class="menu-icon icon-home-logo">F</span><span>Início</span></button>
+        <button class="menu-item" type="button" data-view-target="sale" data-admin-only><span class="menu-icon icon-sale" aria-hidden="true"></span><span>Vendas</span></button>
+        <button class="menu-item" type="button" data-view-target="expenses" data-admin-only><span class="menu-icon icon-expense" aria-hidden="true"></span><span>Despesas</span></button>
+        <button class="menu-item" type="button" data-view-target="firmCommission" data-admin-only><span class="menu-icon icon-firm" aria-hidden="true"></span><span>Firma</span></button>
+        <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-history" aria-hidden="true"></span><span>Histórico</span></button>
+        <button class="menu-item" type="button" data-view-target="linePayments"><span class="menu-icon icon-vendors" aria-hidden="true"></span><span>Comprovantes</span></button>
+        <button class="menu-item" type="button" data-view-target="weeklyClosings" data-admin-only><span class="menu-icon icon-history" aria-hidden="true"></span><span>Fechamento</span></button>
       </nav>
     </main>
 
@@ -944,7 +980,7 @@
       <form id="weekDeleteForm" method="dialog">
         <div class="dialog-heading">
           <div>
-            <span class="section-kicker">Exclusao controlada</span>
+            <span class="section-kicker">Exclusão controlada</span>
             <h2>Apagar dados da semana</h2>
           </div>
           <button id="weekDeleteCancelTop" class="dialog-close" type="button" aria-label="Fechar">X</button>
@@ -1029,7 +1065,72 @@
       </form>
     </dialog>
 
+    <dialog id="saleEditDialog" class="agent-edit-dialog sale-edit-dialog">
+      <form id="saleEditForm" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <span class="section-kicker">Vendas</span>
+            <h2>Editar venda</h2>
+          </div>
+          <button id="saleEditCancelTop" class="dialog-close" type="button" aria-label="Fechar">X</button>
+        </div>
+        <input id="saleEditId" type="hidden" />
+        <div class="form-grid">
+          <label>
+            Valor da venda
+            <input id="saleEditAmount" type="text" inputmode="numeric" required />
+          </label>
+          <label>
+            Formato de venda
+            <select id="saleEditFormat" required>
+              <option value="standard">Imposto 35%</option>
+              <option value="bank40">Imposto 40%</option>
+              <option value="bank40Special">40% especial</option>
+              <option value="machine">NFC</option>
+            </select>
+          </label>
+          <label>
+            Vendedor 1
+            <select id="saleEditAgent1" required></select>
+          </label>
+          <label>
+            Vendedor 2
+            <select id="saleEditAgent2" required></select>
+          </label>
+          <label>
+            Vendedor 3
+            <select id="saleEditAgent3"></select>
+          </label>
+          <label>
+            Status
+            <select id="saleEditStatus" required>
+              <option value="Pago">Pago</option>
+              <option value="Pendente">Pendente</option>
+              <option value="Cancelado">Cancelado</option>
+            </select>
+          </label>
+          <label>
+            Data
+            <input id="saleEditDate" type="date" required />
+          </label>
+          <label>
+            Observação
+            <input id="saleEditNotes" type="text" placeholder="Contrato, banco, prazo..." />
+          </label>
+        </div>
+        <label>
+          Motivo da edição
+          <textarea id="saleEditReason" rows="3" minlength="5" placeholder="Informe o motivo da alteração" required></textarea>
+        </label>
+        <div id="saleEditChanges" class="edit-change-list" aria-live="polite"></div>
+        <div class="dialog-actions">
+          <button id="saleEditCancel" class="ghost-button" type="button">Cancelar</button>
+          <button class="secondary-button" type="submit">Salvar alterações</button>
+        </div>
+      </form>
+    </dialog>
+
     <script src="./migration-data.js?v=20260624-permissoes"></script>
-    <script src="./financeiro.js?v=20260720-sync-nuvem-semana-firma"></script>
+    <script src="./financeiro.js?v=20260720-menu-inicio-edicao-vendas"></script>
   </body>
 </html>

@@ -153,6 +153,10 @@ const el = {
   menuUserRole: document.querySelector("#menuUserRole"),
   totalSold: document.querySelector("#totalSold"),
   dashboardCapitalCurrent: document.querySelector("#dashboardCapitalCurrent"),
+  dashboardSalesBalance: document.querySelector("#dashboardSalesBalance"),
+  dashboardSalesPeriod: document.querySelector("#dashboardSalesPeriod"),
+  dashboardCashBalance: document.querySelector("#dashboardCashBalance"),
+  dashboardCashUpdated: document.querySelector("#dashboardCashUpdated"),
   dashboardCapitalGoal: document.querySelector("#dashboardCapitalGoal"),
   dashboardCapitalRemaining: document.querySelector("#dashboardCapitalRemaining"),
   dashboardCapitalPercent: document.querySelector("#dashboardCapitalPercent"),
@@ -165,7 +169,9 @@ const el = {
   workingCapital: document.querySelector("#workingCapital"),
   menuCashBalance: document.querySelector("#menuCashBalance"),
   payableCommission: document.querySelector("#payableCommission"),
+  feedSalesBalance: document.querySelector("#feedSalesBalance"),
   totalTax: document.querySelector("#totalTax"),
+  dashboardActivityFeed: document.querySelector("#dashboardActivityFeed"),
   weeklyPeriod: document.querySelector("#weeklyPeriod"),
   weeklySalesTotal: document.querySelector("#weeklySalesTotal"),
   weeklyExpensesTotal: document.querySelector("#weeklyExpensesTotal"),
@@ -198,6 +204,22 @@ const el = {
   saleStatus: document.querySelector("#saleStatus"),
   saleDate: document.querySelector("#saleDate"),
   saleNotes: document.querySelector("#saleNotes"),
+  salePageCards: document.querySelector("#salePageCards"),
+  saleEditDialog: document.querySelector("#saleEditDialog"),
+  saleEditForm: document.querySelector("#saleEditForm"),
+  saleEditId: document.querySelector("#saleEditId"),
+  saleEditAmount: document.querySelector("#saleEditAmount"),
+  saleEditFormat: document.querySelector("#saleEditFormat"),
+  saleEditAgent1: document.querySelector("#saleEditAgent1"),
+  saleEditAgent2: document.querySelector("#saleEditAgent2"),
+  saleEditAgent3: document.querySelector("#saleEditAgent3"),
+  saleEditStatus: document.querySelector("#saleEditStatus"),
+  saleEditDate: document.querySelector("#saleEditDate"),
+  saleEditNotes: document.querySelector("#saleEditNotes"),
+  saleEditReason: document.querySelector("#saleEditReason"),
+  saleEditChanges: document.querySelector("#saleEditChanges"),
+  saleEditCancel: document.querySelector("#saleEditCancel"),
+  saleEditCancelTop: document.querySelector("#saleEditCancelTop"),
   expenseForm: document.querySelector("#expenseForm"),
   expenseDate: document.querySelector("#expenseDate"),
   expenseDescription: document.querySelector("#expenseDescription"),
@@ -341,17 +363,17 @@ const el = {
 };
 
 const viewTitles = {
-  dashboard: "Dashboard",
-  simulation: "Simulacao de venda",
-  sale: "Nova venda",
+  dashboard: "Tela de Início",
+  simulation: "Simulação de venda",
+  sale: "Vendas",
   expenses: "Despesas",
-  linePayments: "Pagamento dos vendedores",
-  firmCommission: "Comissao firma",
-  history: "Historico",
-  weeklyClosings: "Historico de Fechamentos",
-  calendar: "Calendario Financeiro",
-  capitalSettings: "Edicao de Giro e Meta",
-  settings: "Configuracoes",
+  linePayments: "Comprovantes",
+  firmCommission: "Firma",
+  history: "Histórico",
+  weeklyClosings: "Fechamento de Caixa",
+  calendar: "Calendário Financeiro",
+  capitalSettings: "Edição de Giro de Capital",
+  settings: "Edição de Usuários",
 };
 
 function loadState() {
@@ -605,7 +627,7 @@ async function loadStateFromCloud({ silent = false } = {}) {
 function scheduleCloudSave(delay = 800) {
   if (!cloudSyncEnabled || !SUPABASE_URL || !SUPABASE_KEY) return;
   pendingCloudSave = true;
-  if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Salvando na nuvem...";
+  if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Sincronizando...";
   window.clearTimeout(cloudSaveTimer);
   cloudSaveTimer = window.setTimeout(saveStateToCloud, delay);
 }
@@ -656,7 +678,7 @@ async function saveStateToCloud() {
     return await cloudSavePromise;
   } catch (error) {
     pendingCloudSave = true;
-    if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Pendente de salvar na nuvem";
+    if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Falha na sincronização";
     window.clearTimeout(pendingCloudRetryTimer);
     pendingCloudRetryTimer = window.setTimeout(saveStateToCloud, 5000);
     console.warn("Nao foi possivel salvar no Supabase.", error);
@@ -740,7 +762,7 @@ function scheduleSettingsAudit(previousSettings, nextSettings) {
 function updateLastSyncLabel(date = new Date()) {
   lastSyncAt = date;
   if (!el.lastSyncLabel) return;
-  el.lastSyncLabel.textContent = `Ultima atualizacao: ${date.toLocaleString("pt-BR", {
+  el.lastSyncLabel.textContent = `Dados sincronizados: ${date.toLocaleString("pt-BR", {
     dateStyle: "short",
     timeStyle: "short",
   })}`;
@@ -1784,7 +1806,14 @@ function renderSummary() {
   const goal = getCapitalGoal();
   const capitalPercent = goal > 0 ? Math.min(100, (capital / goal) * 100) : 0;
   const remaining = Math.max(0, goal - capital);
+  const selectedWeek = getSelectedFinancialWeek();
+  const weekPeriod = selectedWeek
+    ? `${selectedWeek.label} - ${DATE.format(isoToLocalDate(selectedWeek.startDate))} até ${DATE.format(isoToLocalDate(selectedWeek.endDate))}`
+    : "Período selecionado";
   el.totalSold.textContent = currency(totals.totalSold);
+  if (el.dashboardSalesBalance) el.dashboardSalesBalance.textContent = currency(totals.totalSold);
+  if (el.feedSalesBalance) el.feedSalesBalance.textContent = currency(totals.totalSold);
+  if (el.dashboardSalesPeriod) el.dashboardSalesPeriod.textContent = weekPeriod;
   if (el.dashboardCapitalCurrent) el.dashboardCapitalCurrent.textContent = currency(capital);
   if (el.dashboardCapitalGoal) el.dashboardCapitalGoal.textContent = currency(goal);
   if (el.dashboardCapitalRemaining) el.dashboardCapitalRemaining.textContent = currency(remaining);
@@ -1794,6 +1823,8 @@ function renderSummary() {
       goal > 0 && capital >= goal ? "Meta batida. Empresa redonda." : "Acompanhamento da meta financeira";
   }
   if (el.dashboardCapitalProgress) el.dashboardCapitalProgress.style.width = `${capitalPercent}%`;
+  if (el.dashboardCashBalance) el.dashboardCashBalance.textContent = currency(totals.cashBalance);
+  if (el.dashboardCashUpdated) el.dashboardCashUpdated.textContent = `Atualizado ${lastSyncAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
   el.netCompany.textContent = currency(totals.netCompany);
   el.firmCash.textContent = currency(totals.firmCash);
   el.totalExpenses.textContent = currency(totals.pendingExpenses);
@@ -1802,6 +1833,86 @@ function renderSummary() {
   el.menuCashBalance.textContent = currency(totals.cashBalance);
   el.payableCommission.textContent = currency(totals.payableCommission);
   el.totalTax.textContent = currency(totals.totalTax);
+}
+
+function renderDashboardActivity() {
+  if (!el.dashboardActivityFeed) return;
+  const records = getOperationalRecords();
+  const saleItems = activeSales(records.sales)
+    .slice(0, 5)
+    .map((sale) => ({
+      type: "Venda",
+      title: `${SALE_FORMATS[getSaleFormat(sale)] || "Venda"} - ${sale.status}`,
+      detail: dateWithWeekday(sale.date),
+      amount: Number(sale.amount || 0),
+      target: "history",
+    }));
+  const expenseItems = activeExpenses(records.expenses)
+    .slice(0, 5)
+    .map((expense) => ({
+      type: "Despesa",
+      title: expense.description || "Despesa sem descrição",
+      detail: `${dateWithWeekday(expense.date)} - ${expense.status}`,
+      amount: Number(expense.amount || 0),
+      target: "expenses",
+    }));
+  const paymentItems = activeAllocations(records.allocations)
+    .filter((allocation) => allocation.type === "working_capital_expense")
+    .slice(0, 5)
+    .map((allocation) => ({
+      type: "Pagamento",
+      title: allocation.notes || "Pagamento registrado",
+      detail: dateWithWeekday(allocationAccountingDate(allocation)),
+      amount: Number(allocation.amount || 0),
+      target: "firmCommission",
+    }));
+  const closingItems = (state.weeklyClosings || [])
+    .filter((closing) => closing.status !== "Excluida")
+    .slice(0, 5)
+    .map((closing) => ({
+      type: "Fechamento",
+      title: closing.status || "Fechamento registrado",
+      detail: `${closing.weekKey || "Semana"} - ${closing.closedBy || "sistema"}`,
+      amount: Number(closing.totals?.totalSales || closing.total_sales || 0),
+      target: "weeklyClosings",
+    }));
+  const groups = [
+    ["Últimas vendas", saleItems, "history"],
+    ["Últimas despesas", expenseItems, "expenses"],
+    ["Últimos pagamentos", paymentItems, "firmCommission"],
+    ["Últimos fechamentos", closingItems, "weeklyClosings"],
+  ];
+  el.dashboardActivityFeed.innerHTML = groups
+    .map(
+      ([title, items, target]) => `
+        <section class="activity-group">
+          <div class="activity-group-heading">
+            <strong>${title}</strong>
+            <button type="button" data-view-target="${target}">Ver todos</button>
+          </div>
+          ${
+            items.length
+              ? items
+                  .map(
+                    (item) => `
+                      <article class="activity-item">
+                        <div>
+                          <span>${item.type}</span>
+                          <strong>${escapeHTML(item.title)}</strong>
+                          <small>${escapeHTML(item.detail)}</small>
+                        </div>
+                        <strong>${currency(item.amount)}</strong>
+                      </article>
+                    `,
+                  )
+                  .join("")
+              : `<p class="activity-empty">Nenhum registro neste período.</p>`
+          }
+        </section>
+      `,
+    )
+    .join("");
+  bindDynamicViewButtons(el.dashboardActivityFeed);
 }
 
 function renderCapitalSettings() {
@@ -3710,6 +3821,11 @@ function renderSales() {
                   <span>Sobra firma</span>
                   <strong>${currency(calc.firm)}</strong>
                 </div>
+                ${
+                  !scope.archived && isAdmin()
+                    ? `<button class="ghost-button edit-sale" type="button" data-id="${sale.id}">Editar</button>`
+                    : ""
+                }
               </div>
             `;
           })
@@ -3856,6 +3972,11 @@ function renderSales() {
 
       <div class="history-card-actions">
         ${
+          !scope.archived && isAdmin()
+            ? `<button class="secondary-button edit-sale" type="button" data-id="${sale.id}">Editar</button>`
+            : ""
+        }
+        ${
           !scope.archived && isAdmin() && sale.status === "Pendente"
             ? `<button class="secondary-button change-sale-status" type="button" data-id="${sale.id}" data-status="Pago">Marcar como paga</button>
                <button class="ghost-button change-sale-status" type="button" data-id="${sale.id}" data-status="Cancelado">Cancelar venda</button>`
@@ -3874,6 +3995,8 @@ function renderSales() {
     `;
     el.salesCards.append(card);
   }
+
+  bindSaleEditButtons(el.salesCards);
 
   el.salesCards.querySelectorAll(".change-sale-status").forEach((button) => {
     button.addEventListener("click", () => {
@@ -3923,6 +4046,201 @@ function renderSales() {
       render();
     });
   });
+}
+
+function saleEditableSnapshot(sale) {
+  return {
+    date: sale.date || todayISO(),
+    amount: moneyValue(sale.amount || 0),
+    format: getSaleFormat(sale),
+    status: sale.status || "Pago",
+    notes: sale.notes || "",
+    agentIds: getSaleAgentIds(sale),
+  };
+}
+
+function getSaleEditValues() {
+  return {
+    date: el.saleEditDate.value,
+    amount: moneyValue(parseCurrency(el.saleEditAmount.value)),
+    format: el.saleEditFormat.value,
+    status: el.saleEditStatus.value,
+    notes: el.saleEditNotes.value.trim(),
+    agentIds: [el.saleEditAgent1.value, el.saleEditAgent2.value, el.saleEditAgent3.value].filter(Boolean),
+  };
+}
+
+function formatSaleEditValue(field, value) {
+  if (field === "amount") return currency(value);
+  if (field === "format") return SALE_FORMATS[value] || value || "-";
+  if (field === "agentIds") {
+    return (value || [])
+      .map((agentId) => findAgent(agentId)?.name || agentId)
+      .filter(Boolean)
+      .join(", ") || "-";
+  }
+  if (field === "date") return dateWithWeekday(value);
+  if (field === "notes") return value || "Sem observacao";
+  return value || "-";
+}
+
+function saleChangeRows(previous, next) {
+  const labels = {
+    date: "Data",
+    amount: "Valor",
+    format: "Formato",
+    status: "Status",
+    notes: "Observacao",
+    agentIds: "Vendedores",
+  };
+  return Object.keys(labels)
+    .filter((field) => JSON.stringify(previous[field]) !== JSON.stringify(next[field]))
+    .map((field) => ({
+      field,
+      label: labels[field],
+      previous: previous[field],
+      next: next[field],
+    }));
+}
+
+function renderSaleEditChanges() {
+  if (!el.saleEditChanges) return;
+  const sale = state.sales.find((item) => item.id === el.saleEditId.value);
+  if (!sale) {
+    el.saleEditChanges.innerHTML = "";
+    return;
+  }
+  const changes = saleChangeRows(saleEditableSnapshot(sale), getSaleEditValues());
+  el.saleEditChanges.innerHTML = changes.length
+    ? `
+      <strong>Alteracoes que serao salvas</strong>
+      ${changes
+        .map(
+          (change) => `
+            <div class="edit-change-row">
+              <span>${change.label}</span>
+              <small>${escapeHTML(formatSaleEditValue(change.field, change.previous))}</small>
+              <strong>${escapeHTML(formatSaleEditValue(change.field, change.next))}</strong>
+            </div>
+          `,
+        )
+        .join("")}
+    `
+    : `<p>Nenhuma alteracao detectada.</p>`;
+}
+
+function validateSaleValues(values, focusTarget = null) {
+  if (!Number.isFinite(values.amount) || values.amount <= 0) {
+    alert("Informe um valor de venda maior que zero.");
+    focusTarget?.focus?.();
+    return false;
+  }
+  if (!values.date) {
+    alert("Informe a data da venda.");
+    return false;
+  }
+  if (values.agentIds.length < 2) {
+    alert("Informe Vendedor 1 e Vendedor 2.");
+    return false;
+  }
+  const selectedAgents = values.agentIds.map(findAgent);
+  if (!selectedAgents[0] || selectedAgents[0].sector !== "1 Linha") {
+    alert("O Vendedor 1 precisa estar cadastrado como Vendedor 1.");
+    return false;
+  }
+  if (!selectedAgents[1] || selectedAgents[1].sector !== "2 Linha") {
+    alert("O Vendedor 2 precisa estar cadastrado como Vendedor 2.");
+    return false;
+  }
+  if (selectedAgents[2] && !["2 Linha", "3 Linha"].includes(selectedAgents[2].sector)) {
+    alert("O Vendedor 3 precisa estar cadastrado como Vendedor 2 ou Vendedor 3.");
+    return false;
+  }
+  if (values.agentIds.length > 2 && new Set(values.agentIds).size < values.agentIds.length) {
+    alert("Selecione vendedores diferentes.");
+    return false;
+  }
+  return true;
+}
+
+function openSaleEditDialog(saleId) {
+  if (!isAdmin()) {
+    alert("Acesso restrito aos administradores.");
+    return;
+  }
+  const sale = state.sales.find((item) => item.id === saleId && !item.is_deleted);
+  if (!sale || !el.saleEditDialog) return;
+  const agentIds = getSaleAgentIds(sale);
+  el.saleEditId.value = sale.id;
+  setCurrencyInput(el.saleEditAmount, sale.amount || 0);
+  el.saleEditFormat.value = getSaleFormat(sale);
+  fillAgentSelect(el.saleEditAgent1, { keepValue: agentIds[0] || "", sector: "1 Linha" });
+  fillAgentSelect(el.saleEditAgent2, { keepValue: agentIds[1] || "", sector: "2 Linha" });
+  fillAgentSelect(el.saleEditAgent3, { optional: true, keepValue: agentIds[2] || "", sector: ["2 Linha", "3 Linha"] });
+  el.saleEditStatus.value = sale.status || "Pago";
+  el.saleEditDate.value = sale.date || todayISO();
+  el.saleEditNotes.value = sale.notes || "";
+  el.saleEditReason.value = "";
+  renderSaleEditChanges();
+  el.saleEditDialog.showModal();
+  el.saleEditAmount.focus();
+}
+
+function bindSaleEditButtons(container) {
+  if (!container) return;
+  container.querySelectorAll(".edit-sale").forEach((button) => {
+    button.addEventListener("click", () => openSaleEditDialog(button.dataset.id));
+  });
+}
+
+function bindDynamicViewButtons(container) {
+  if (!container) return;
+  container.querySelectorAll("[data-view-target]").forEach((button) => {
+    button.addEventListener("click", () => {
+      setActiveView(button.dataset.viewTarget);
+      setMobileMenu(false);
+    });
+  });
+}
+
+function renderSalePageList() {
+  if (!el.salePageCards) return;
+  const rows = activeSales(recordsForWeek(getSelectedFinancialWeek()).sales).slice(0, 10);
+  el.salePageCards.innerHTML = "";
+  if (!rows.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state firm-empty";
+    empty.textContent = "Nenhuma venda lançada nesta semana.";
+    el.salePageCards.append(empty);
+    return;
+  }
+  rows.forEach((sale) => {
+    const calc = calculateSale(sale);
+    const agents = getSaleAgents(sale).map((agent) => agent.name).join(", ") || "-";
+    const card = document.createElement("article");
+    card.className = "format-sale-card compact-sale-card";
+    card.innerHTML = `
+      <div class="sale-modern-head">
+        <div>
+          <span>${dateWithWeekday(sale.date)}</span>
+          <h3>${currency(calc.amount)}</h3>
+          <strong>${calc.formatLabel}</strong>
+        </div>
+        <span class="status ${sale.status.toLowerCase()}">${sale.status}</span>
+      </div>
+      <div class="sale-modern-people">
+        <div><span>Vendedores</span><strong>${escapeHTML(agents)}</strong></div>
+        <div><span>Firma</span><strong>${currency(calc.firm)}</strong></div>
+      </div>
+      <div class="history-card-actions">
+        ${isAdmin() ? `<button class="secondary-button edit-sale" type="button" data-id="${sale.id}">Editar</button>` : ""}
+        <button class="ghost-button" type="button" data-view-target="history">Detalhes</button>
+      </div>
+    `;
+    el.salePageCards.append(card);
+  });
+  bindSaleEditButtons(el.salePageCards);
+  bindDynamicViewButtons(el.salePageCards);
 }
 
 function renderPreview() {
@@ -3987,9 +4305,11 @@ function render() {
   renderAgents();
   renderFinanceWeekSelector();
   renderSummary();
+  renderDashboardActivity();
   renderWeeklyReport();
   renderSelectedWeekCards();
   renderSales();
+  renderSalePageList();
   renderExpenses();
   renderLinePayments();
   renderFirmCommission();
@@ -4223,6 +4543,76 @@ el.saleForm.addEventListener("submit", (event) => {
   saveState();
   render();
 });
+
+el.saleEditForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!isAdmin()) return;
+  const sale = state.sales.find((item) => item.id === el.saleEditId.value && !item.is_deleted);
+  if (!sale) {
+    el.saleEditDialog.close();
+    return;
+  }
+  const reason = el.saleEditReason.value.trim();
+  if (reason.length < 5) {
+    alert("Informe o motivo da alteracao com pelo menos 5 caracteres.");
+    el.saleEditReason.focus();
+    return;
+  }
+  const previous = saleEditableSnapshot(sale);
+  const next = getSaleEditValues();
+  if (!validateSaleValues(next, el.saleEditAmount)) return;
+  const changes = saleChangeRows(previous, next);
+  if (!changes.length) {
+    alert("Nenhuma alteracao foi detectada.");
+    return;
+  }
+  const confirmationLines = changes
+    .map(
+      (change) =>
+        `${change.label}: ${formatSaleEditValue(change.field, change.previous)} -> ${formatSaleEditValue(
+          change.field,
+          change.next,
+        )}`,
+    )
+    .join("\n");
+  if (!window.confirm(`Confirma a alteracao desta venda?\n\n${confirmationLines}`)) return;
+
+  sale.date = next.date;
+  sale.amount = next.amount;
+  sale.format = next.format;
+  sale.status = next.status;
+  sale.notes = next.notes;
+  sale.agentIds = [...next.agentIds];
+  sale.updatedAt = new Date().toISOString();
+  sale.updatedBy = currentSession();
+  sale.editHistory = [
+    ...(Array.isArray(sale.editHistory) ? sale.editHistory : []),
+    {
+      id: crypto.randomUUID(),
+      changedAt: sale.updatedAt,
+      changedBy: currentSession(),
+      reason,
+      changes,
+    },
+  ];
+  sale.calculationSnapshot = calculateSale(sale, false);
+  writeAuditLog("sale.update", {
+    saleId: sale.id,
+    reason,
+    previous,
+    next,
+    changes,
+  });
+  el.saleEditDialog.close();
+  saveState();
+  render();
+});
+
+el.saleEditCancel?.addEventListener("click", () => el.saleEditDialog.close());
+el.saleEditCancelTop?.addEventListener("click", () => el.saleEditDialog.close());
+[el.saleEditAmount, el.saleEditFormat, el.saleEditAgent1, el.saleEditAgent2, el.saleEditAgent3, el.saleEditStatus, el.saleEditDate, el.saleEditNotes].forEach(
+  (input) => input?.addEventListener("input", renderSaleEditChanges),
+);
 
 el.agentForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -4500,17 +4890,23 @@ el.simulationForm.addEventListener("submit", (event) => {
   event.preventDefault();
   renderSimulation();
 });
-[el.saleAmount, el.expenseAmount, el.simulationAmount, el.firmAllocationAmount, el.capitalTurnoverInput, el.capitalGoalInput].forEach((input) => {
-  if (!input) return;
-  input.addEventListener("input", () => {
-    if (input === el.saleAmount) renderPreview();
-    if (input === el.simulationAmount) renderSimulation();
-  });
-  input.addEventListener("focus", () => {
-    if (parseCurrency(input.value) === 0) input.value = "";
-  });
-  input.addEventListener("blur", () => formatCurrencyInput(input));
-});
+[el.saleAmount, el.saleEditAmount, el.expenseAmount, el.simulationAmount, el.firmAllocationAmount, el.capitalTurnoverInput, el.capitalGoalInput].forEach(
+  (input) => {
+    if (!input) return;
+    input.addEventListener("input", () => {
+      if (input === el.saleAmount) renderPreview();
+      if (input === el.saleEditAmount) renderSaleEditChanges();
+      if (input === el.simulationAmount) renderSimulation();
+    });
+    input.addEventListener("focus", () => {
+      if (parseCurrency(input.value) === 0) input.value = "";
+    });
+    input.addEventListener("blur", () => {
+      formatCurrencyInput(input);
+      if (input === el.saleEditAmount) renderSaleEditChanges();
+    });
+  },
+);
 document.querySelectorAll("[data-view-target]").forEach((button) => {
   button.addEventListener("click", () => {
     setActiveView(button.dataset.viewTarget);

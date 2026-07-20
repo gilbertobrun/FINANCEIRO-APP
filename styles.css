@@ -21,6 +21,226 @@
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Atualizacao bancaria: menu, inicio, feed e edicao segura */
+.app-menu {
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.menu-section-title {
+  color: rgba(245, 211, 114, 0.72);
+  letter-spacing: 0.08em;
+}
+
+.menu-list,
+.menu-item,
+.menu-copy {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.menu-item {
+  width: 100%;
+  align-items: center;
+}
+
+.menu-copy strong,
+.menu-copy small {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+}
+
+.home-actions {
+  align-items: stretch;
+}
+
+.section-heading.full-row {
+  grid-column: 1 / -1;
+  margin: 0 0 2px;
+}
+
+.section-heading.full-row h2 {
+  margin: 4px 0 2px;
+  font-size: clamp(1.45rem, 2.4vw, 2.1rem);
+}
+
+.capital-overview {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.capital-overview-main.balance-card {
+  min-height: 150px;
+  background:
+    radial-gradient(circle at top right, rgba(245, 211, 114, 0.15), transparent 38%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.012)),
+    #0b0b0b !important;
+}
+
+.capital-overview-grid,
+.capital-overview-progress {
+  grid-column: 1 / -1;
+}
+
+.dashboard-activity-feed {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.activity-group {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(214, 169, 79, 0.22);
+  border-radius: 22px;
+  background: linear-gradient(145deg, #141414, #070707);
+}
+
+.activity-group-heading,
+.activity-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.activity-group-heading strong {
+  color: #fff7de;
+  font-size: 1rem;
+}
+
+.activity-group-heading button {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: #080808;
+  background: linear-gradient(135deg, #f7d77a, #d8aa4f);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.activity-item {
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.activity-item div {
+  display: grid;
+  min-width: 0;
+}
+
+.activity-item span,
+.activity-item small,
+.activity-empty {
+  color: rgba(255, 247, 222, 0.68);
+}
+
+.activity-item strong {
+  color: #fff7de;
+}
+
+.activity-item > strong {
+  color: #f5d372;
+  white-space: nowrap;
+}
+
+.sale-list-panel {
+  margin-top: 18px;
+}
+
+.compact-sale-card {
+  margin-bottom: 12px;
+}
+
+.compact-sale-card .sale-modern-head h3 {
+  font-size: clamp(1.55rem, 2.4vw, 2.4rem);
+}
+
+.loan-group-part {
+  align-items: center;
+}
+
+.loan-group-part .edit-sale {
+  min-height: 44px;
+  padding: 10px 14px;
+}
+
+.sale-edit-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.68);
+  backdrop-filter: blur(6px);
+}
+
+.sale-edit-dialog form {
+  width: min(760px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+}
+
+.edit-change-list {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(214, 169, 79, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.edit-change-list > strong {
+  color: #f5d372;
+}
+
+.edit-change-list p {
+  margin: 0;
+  color: rgba(255, 247, 222, 0.68);
+}
+
+.edit-change-row {
+  display: grid;
+  grid-template-columns: 130px 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.edit-change-row span {
+  color: #fff7de;
+  font-weight: 800;
+}
+
+.edit-change-row small {
+  color: rgba(255, 247, 222, 0.58);
+}
+
+.edit-change-row strong {
+  color: #f5d372;
+}
+
+.admin-top-action[hidden],
+[data-admin-only][hidden] {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .capital-overview,
+  .dashboard-activity-feed {
+    grid-template-columns: 1fr;
+  }
+
+  .app-menu {
+    width: min(88vw, 360px);
+  }
+
+  .edit-change-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Etapa 5 - tempo real, semanas financeiras e calendario */
 .sync-status {
   display: grid;
@@ -6388,5 +6608,142 @@ h2 {
     width: 100%;
     min-height: 44px;
     border-radius: 14px !important;
+  }
+}
+
+/* Prioridade final: refinamento bancario para menu, inicio e edicao */
+.app-menu {
+  overflow-x: hidden !important;
+  box-sizing: border-box;
+}
+
+.menu-list,
+.menu-item,
+.menu-copy {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.menu-item {
+  width: 100%;
+  align-items: center;
+}
+
+.menu-copy strong,
+.menu-copy small {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+}
+
+.section-heading.full-row {
+  grid-column: 1 / -1;
+}
+
+.capital-overview {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.capital-overview-grid,
+.capital-overview-progress {
+  grid-column: 1 / -1;
+}
+
+.dashboard-activity-feed {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.activity-group,
+.sale-list-panel,
+.edit-change-list {
+  border: 1px solid rgba(214, 169, 79, 0.22);
+  border-radius: 22px;
+  background: linear-gradient(145deg, #141414, #070707);
+}
+
+.activity-group {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+}
+
+.activity-group-heading,
+.activity-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.activity-item {
+  align-items: center;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.activity-item div {
+  display: grid;
+  min-width: 0;
+}
+
+.activity-item > strong,
+.edit-change-row strong {
+  color: #f5d372;
+}
+
+.activity-group-heading button {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: #080808;
+  background: linear-gradient(135deg, #f7d77a, #d8aa4f);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sale-list-panel {
+  margin-top: 18px;
+  padding: 16px;
+}
+
+.compact-sale-card {
+  margin-bottom: 12px;
+}
+
+.edit-change-list {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.edit-change-row {
+  display: grid;
+  grid-template-columns: 130px 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.edit-change-row span {
+  color: #fff7de;
+  font-weight: 800;
+}
+
+.edit-change-row small {
+  color: rgba(255, 247, 222, 0.58);
+}
+
+@media (max-width: 980px) {
+  .capital-overview,
+  .dashboard-activity-feed {
+    grid-template-columns: 1fr !important;
+  }
+
+  .edit-change-row {
+    grid-template-columns: 1fr;
   }
 }
