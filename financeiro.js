@@ -370,6 +370,7 @@ const viewTitles = {
   linePayments: "Comprovantes",
   firmCommission: "Firma",
   history: "Histórico",
+  generalHistory: "Hist?rico Geral",
   weeklyClosings: "Fechamento de Caixa",
   calendar: "Calendário Financeiro",
   capitalSettings: "Edição de Giro de Capital",
@@ -2323,7 +2324,7 @@ function setActiveView(viewName) {
   document.querySelectorAll("[data-view-target]").forEach((button) => {
     button.classList.toggle("active", button.dataset.viewTarget === viewName);
   });
-  el.viewTitle.textContent = viewTitles[viewName] || "Dashboard";
+  el.viewTitle.textContent = viewTitles[viewName] || "Tela de Início";
 }
 
 function renderExpenses() {

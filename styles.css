@@ -6747,3 +6747,26 @@ h2 {
     grid-template-columns: 1fr;
   }
 }
+
+.general-history-hero {
+  margin-bottom: 18px;
+}
+
+.general-history-week-shell {
+  margin: 0 0 18px !important;
+}
+
+[data-view="generalHistory"] .finance-week-shell {
+  display: grid;
+  gap: 16px;
+}
+
+[data-view="generalHistory"] .weekly-report {
+  margin-top: 18px;
+}
+
+@media (max-width: 767.98px) {
+  [data-view="generalHistory"] .finance-week-shell {
+    padding: 16px !important;
+  }
+}

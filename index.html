@@ -64,6 +64,7 @@
           <button class="menu-item" type="button" data-view-target="expenses" data-admin-only><span class="menu-icon icon-expense" aria-hidden="true"></span><span class="menu-copy"><strong>Despesas</strong><small>Registrar e pagar despesas</small></span></button>
           <button class="menu-item" type="button" data-view-target="firmCommission" data-admin-only><span class="menu-icon icon-firm" aria-hidden="true"></span><span class="menu-copy"><strong>Firma</strong><small>Caixa e movimentações</small></span></button>
           <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Histórico</strong><small>Todas as vendas</small></span></button>
+          <button class="menu-item" type="button" data-view-target="generalHistory"><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Histórico Geral</strong><small>Semanas de cada mês</small></span></button>
           <button class="menu-item" type="button" data-view-target="linePayments"><span class="menu-icon icon-sale" aria-hidden="true"></span><span class="menu-copy"><strong>Comprovantes</strong><small>Folha de pagamento</small></span></button>
           <button class="menu-item" type="button" data-view-target="weeklyClosings" data-admin-only><span class="menu-icon icon-history" aria-hidden="true"></span><span class="menu-copy"><strong>Fechamento de Caixa</strong><small>Histórico de fechamentos</small></span></button>
 
@@ -110,19 +111,6 @@
             <button id="logoutBtn" class="ghost-button" type="button" title="Sair do acesso">Sair</button>
           </div>
         </header>
-
-        <section class="finance-week-shell" aria-label="Controle semanal financeiro">
-          <div class="finance-month-control">
-            <button id="prevFinanceMonthBtn" type="button" aria-label="Mes anterior">&lt;</button>
-            <strong id="financeMonthLabel">Mes atual</strong>
-            <button id="nextFinanceMonthBtn" type="button" aria-label="Proximo mes">&gt;</button>
-          </div>
-          <div id="financeWeekTabs" class="finance-week-tabs" role="tablist"></div>
-          <div class="finance-week-summary">
-            <span id="selectedWeekPeriod">Período da semana</span>
-            <strong id="selectedWeekStatus">Em andamento</strong>
-          </div>
-        </section>
 
         <section class="app-view active" data-view="dashboard">
           <section class="home-hero">
@@ -341,6 +329,31 @@
               <div id="simulationResult" class="simulation-result-list"></div>
             </section>
           </section>
+        </section>
+
+        <section class="app-view" data-view="generalHistory">
+          <section class="page-hero general-history-hero" aria-label="Hist?rico geral por semana">
+            <div>
+              <span>Hist?rico Geral</span>
+              <strong>Semanas de cada m?s</strong>
+              <small>Escolha o m?s e a semana para consultar vendas, despesas, firma e fechamento.</small>
+            </div>
+            <button class="page-hero-action" type="button" data-view-target="history">Ver vendas</button>
+          </section>
+
+        <section class="finance-week-shell general-history-week-shell" aria-label="Controle semanal financeiro">
+          <div class="finance-month-control">
+            <button id="prevFinanceMonthBtn" type="button" aria-label="Mes anterior">&lt;</button>
+            <strong id="financeMonthLabel">Mes atual</strong>
+            <button id="nextFinanceMonthBtn" type="button" aria-label="Proximo mes">&gt;</button>
+          </div>
+          <div id="financeWeekTabs" class="finance-week-tabs" role="tablist"></div>
+          <div class="finance-week-summary">
+            <span id="selectedWeekPeriod">Período da semana</span>
+            <strong id="selectedWeekStatus">Em andamento</strong>
+          </div>
+        </section>
+
         </section>
 
         <section class="app-view" data-view="sale" data-admin-only>
@@ -971,6 +984,7 @@
         <button class="menu-item" type="button" data-view-target="expenses" data-admin-only><span class="menu-icon icon-expense" aria-hidden="true"></span><span>Despesas</span></button>
         <button class="menu-item" type="button" data-view-target="firmCommission" data-admin-only><span class="menu-icon icon-firm" aria-hidden="true"></span><span>Firma</span></button>
         <button class="menu-item" type="button" data-view-target="history"><span class="menu-icon icon-history" aria-hidden="true"></span><span>Histórico</span></button>
+        <button class="menu-item" type="button" data-view-target="generalHistory"><span class="menu-icon icon-history" aria-hidden="true"></span><span>Geral</span></button>
         <button class="menu-item" type="button" data-view-target="linePayments"><span class="menu-icon icon-vendors" aria-hidden="true"></span><span>Comprovantes</span></button>
         <button class="menu-item" type="button" data-view-target="weeklyClosings" data-admin-only><span class="menu-icon icon-history" aria-hidden="true"></span><span>Fechamento</span></button>
       </nav>
@@ -1131,6 +1145,6 @@
     </dialog>
 
     <script src="./migration-data.js?v=20260624-permissoes"></script>
-    <script src="./financeiro.js?v=20260720-menu-inicio-edicao-vendas"></script>
+    <script src="./financeiro.js?v=20260720-historico-geral"></script>
   </body>
 </html>
