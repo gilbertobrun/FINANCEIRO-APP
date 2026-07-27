@@ -480,10 +480,6 @@ function getAuthSession() {
   try {
     const session = JSON.parse(sessionStorage.getItem(AUTH_SESSION_KEY) || "null");
     if (!session?.access_token) return null;
-    if (session.expires_at && Date.now() >= Number(session.expires_at) * 1000) {
-      sessionStorage.removeItem(AUTH_SESSION_KEY);
-      return null;
-    }
     return session;
   } catch {
     sessionStorage.removeItem(AUTH_SESSION_KEY);
@@ -508,6 +504,31 @@ function supabaseHeaders(extra = {}) {
     "Content-Type": "application/json",
     ...extra,
   };
+}
+
+async function refreshAuthSessionIfNeeded() {
+  const session = getAuthSession();
+  if (!session?.refresh_token) return session;
+  const expiresAt = Number(session.expires_at || 0) * 1000;
+  const shouldRefresh = !session.access_token || !expiresAt || Date.now() >= expiresAt - 60000;
+  if (!shouldRefresh) return session;
+
+  const response = await fetch(`${SUPABASE_AUTH_ENDPOINT}/token?grant_type=refresh_token`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_KEY,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ refresh_token: session.refresh_token }),
+  });
+  if (!response.ok) {
+    setAuthSession(null);
+    throw new Error("Sessao expirada. Entre novamente para sincronizar.");
+  }
+  const refreshed = await response.json();
+  if (!refreshed.refresh_token) refreshed.refresh_token = session.refresh_token;
+  setAuthSession(refreshed);
+  return refreshed;
 }
 
 function hasMeaningfulCloudState(data) {
@@ -581,6 +602,7 @@ async function loadStateFromCloud({ silent = false } = {}) {
   if (cloudLoadPromise) return cloudLoadPromise;
   cloudLoadPromise = (async () => {
     try {
+      if (currentSession()) await refreshAuthSessionIfNeeded();
       if (pendingCloudSave) {
         await saveStateToCloud();
       } else if (cloudSavePromise) {
@@ -608,16 +630,21 @@ async function loadStateFromCloud({ silent = false } = {}) {
         updateLastSyncLabel(new Date());
         render();
         if (!silent) showTransientMessage("Dados atualizados com sucesso.");
-        return;
+        return true;
       }
       cloudSyncEnabled = true;
       cloudUpdatedAt = cloudRow?.updated_at || null;
       scheduleCloudSave(0);
       updateLastSyncLabel(new Date());
+      return true;
     } catch (error) {
       console.warn("Nao foi possivel sincronizar com Supabase.", error);
       cloudSyncEnabled = false;
+      pendingCloudSave = false;
+      window.clearTimeout(pendingCloudRetryTimer);
+      if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Falha na sincronização";
       if (!silent) alert("Nao foi possivel atualizar os dados. Tente novamente.");
+      return false;
     } finally {
       cloudLoadPromise = null;
     }
@@ -638,6 +665,7 @@ async function saveStateToCloud() {
   if (cloudSavePromise) return cloudSavePromise;
   try {
     cloudSavePromise = (async () => {
+      if (currentSession()) await refreshAuthSessionIfNeeded();
       const localSnapshot = sanitizeForCloud(state);
       const remoteResponse = await fetch(`${SUPABASE_STATE_ENDPOINT}?id=eq.main&select=data,updated_at`, {
         headers: supabaseHeaders({ Accept: "application/json" }),
@@ -695,9 +723,9 @@ function loadStateFromObject(data) {
 }
 
 async function writeAuditLog(action, details = {}) {
-  const authSession = getAuthSession();
-  if (!authSession?.access_token || !SUPABASE_URL || !SUPABASE_KEY) return;
   try {
+    const authSession = await refreshAuthSessionIfNeeded();
+    if (!authSession?.access_token || !SUPABASE_URL || !SUPABASE_KEY) return;
     const response = await fetch(SUPABASE_AUDIT_ENDPOINT, {
       method: "POST",
       headers: supabaseHeaders({ Prefer: "return=minimal" }),
@@ -715,10 +743,10 @@ async function writeAuditLog(action, details = {}) {
 }
 
 async function saveWeeklyClosingToCloud(closing) {
-  const authSession = getAuthSession();
-  if (!authSession?.access_token || !SUPABASE_URL || !SUPABASE_KEY || !closing?.weekKey) return;
-  const totals = closing.totals || {};
   try {
+    const authSession = await refreshAuthSessionIfNeeded();
+    if (!authSession?.access_token || !SUPABASE_URL || !SUPABASE_KEY || !closing?.weekKey) return;
+    const totals = closing.totals || {};
     const response = await fetch(`${SUPABASE_WEEKLY_CLOSINGS_ENDPOINT}?on_conflict=week_key`, {
       method: "POST",
       headers: supabaseHeaders({ Prefer: "resolution=merge-duplicates,return=minimal" }),
@@ -787,7 +815,8 @@ async function refreshFromCloud({ manual = false } = {}) {
   if (isManualRefreshing && manual) return;
   if (manual) setRefreshLoading(true);
   try {
-    await loadStateFromCloud({ silent: !manual });
+    const ok = await loadStateFromCloud({ silent: !manual });
+    if (!ok) throw new Error("Falha na sincronização");
     updateLastSyncLabel(new Date());
     if (manual) showTransientMessage("Dados atualizados com sucesso.");
   } catch (error) {
@@ -5019,7 +5048,7 @@ el.weekDeleteForm?.addEventListener("submit", (event) => {
   render();
   alert("Dados da semana apagados da operacao. A auditoria foi preservada.");
 });
-el.exportCsvBtn.addEventListener("click", exportCsv);
+el.exportCsvBtn?.addEventListener("click", exportCsv);
 el.recoverDeletedSalesBtn.addEventListener("click", () => {
   if (!isAdmin()) return;
   const currentIds = new Set(state.sales.map((sale) => sale.id));
@@ -5090,7 +5119,7 @@ el.deleteAllRecordsBtn.addEventListener("click", () => {
   render();
   alert("Fechamento semanal concluido. Os dados sairam da operacao atual e a auditoria foi preservada.");
 });
-el.resetDemoBtn.addEventListener("click", () => {
+el.resetDemoBtn?.addEventListener("click", () => {
   if (!isAdmin()) return;
   saveBackup();
   state = structuredClone(defaults);
