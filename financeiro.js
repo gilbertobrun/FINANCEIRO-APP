@@ -3670,29 +3670,17 @@ function renderFirmCommission() {
 }
 
 function getSelectedHistoryScope() {
-  const selected = el.weekArchiveFilter?.value || "current";
-  if (selected !== "current") {
-    const archive = (state.weekArchives || []).find((item) => item.id === selected);
-    if (archive) {
-      return {
-        key: archive.id,
-        label: archive.label || "Semana arquivada",
-        period: archive.period || "Periodo arquivado",
-        archived: true,
-        sales: archive.sales || [],
-        expenses: archive.expenses || [],
-      };
-    }
-  }
+  const week = getSelectedFinancialWeek();
+  const period = week
+    ? `${DATE.format(isoToLocalDate(week.startDate))} - ${DATE.format(isoToLocalDate(week.endDate))}`
+    : "Lançamentos atuais";
   return {
-    key: "current",
-    label: getSelectedFinancialWeek()?.label || "Semana atual",
-    period: getSelectedFinancialWeek()
-      ? `${DATE.format(isoToLocalDate(getSelectedFinancialWeek().startDate))} - ${DATE.format(isoToLocalDate(getSelectedFinancialWeek().endDate))}`
-      : "Lancamentos atuais",
+    key: week ? weekKey(week) : "current",
+    label: week?.label || "Semana selecionada",
+    period,
     archived: false,
-    sales: recordsForWeek(getSelectedFinancialWeek()).sales,
-    expenses: recordsForWeek(getSelectedFinancialWeek()).expenses,
+    sales: recordsForWeek(week).sales,
+    expenses: recordsForWeek(week).expenses,
   };
 }
 
@@ -3700,21 +3688,14 @@ function renderWeekArchiveFilter() {
   if (!el.weekArchiveFilter) return;
   const week = getSelectedFinancialWeek();
   const selectedWeekKey = week ? weekKey(week) : "current";
-  const previousWeekKey = el.weekArchiveFilter.dataset.weekKey;
-  const previous = previousWeekKey === selectedWeekKey ? el.weekArchiveFilter.value || "current" : "current";
-  const options = [
-    `<option value="current">${escapeHTML(week?.label || "Semana atual")} selecionada</option>`,
-    ...(state.weekArchives || []).map((archive) => {
-      const details = archive.period ? ` - ${archive.period}` : "";
-      return `<option value="${escapeHTML(archive.id)}">${escapeHTML(archive.label || "Semana arquivada")}${escapeHTML(
-        details,
-      )}</option>`;
-    }),
-  ];
-  el.weekArchiveFilter.innerHTML = options.join("");
+  const period = week
+    ? `${DATE.format(isoToLocalDate(week.startDate))} a ${DATE.format(isoToLocalDate(week.endDate))}`
+    : "período atual";
+  el.weekArchiveFilter.innerHTML = `<option value="current">${escapeHTML(
+    `${week?.label || "Semana selecionada"} - ${period}`,
+  )}</option>`;
   el.weekArchiveFilter.dataset.weekKey = selectedWeekKey;
-  const exists = [...el.weekArchiveFilter.options].some((option) => option.value === previous);
-  el.weekArchiveFilter.value = exists ? previous : "current";
+  el.weekArchiveFilter.value = "current";
 }
 
 function renderSales() {
@@ -3798,9 +3779,7 @@ function renderSales() {
   if (!rows.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state firm-empty";
-    empty.textContent = scope.archived
-      ? "Nenhuma venda encontrada nessa semana arquivada."
-      : "Semana atual limpa. Registre as vendas de ontem e hoje.";
+    empty.textContent = "Nenhuma venda encontrada na semana selecionada.";
     el.salesCards.append(empty);
     return;
   }
