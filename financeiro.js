@@ -1,4 +1,4 @@
-﻿const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const DATE = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" });
 const WEEKDAY = new Intl.DateTimeFormat("pt-BR", { weekday: "long", timeZone: "UTC" });
 const STORE_KEY = "financeiro-consignado-v1";
@@ -364,18 +364,18 @@ const el = {
 };
 
 const viewTitles = {
-  dashboard: "Tela de InÃ­cio",
-  simulation: "SimulaÃ§Ã£o de venda",
+  dashboard: "Tela de Início",
+  simulation: "Simulação de venda",
   sale: "Vendas",
   expenses: "Despesas",
   linePayments: "Comprovantes",
   firmCommission: "Firma",
-  history: "HistÃ³rico",
-  generalHistory: "Hist?rico Geral",
+  history: "Histórico",
+  generalHistory: "Histórico Geral",
   weeklyClosings: "Fechamento de Caixa",
-  calendar: "CalendÃ¡rio Financeiro",
-  capitalSettings: "EdiÃ§Ã£o de Giro de Capital",
-  settings: "EdiÃ§Ã£o de UsuÃ¡rios",
+  calendar: "Calendário Financeiro",
+  capitalSettings: "Edição de Giro de Capital",
+  settings: "Edição de Usuários",
 };
 
 function loadState() {
@@ -643,7 +643,7 @@ async function loadStateFromCloud({ silent = false } = {}) {
       cloudSyncEnabled = false;
       pendingCloudSave = false;
       window.clearTimeout(pendingCloudRetryTimer);
-      if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Falha na sincronizaÃ§Ã£o";
+      if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Falha na sincronização";
       if (!silent) alert("Nao foi possivel atualizar os dados. Tente novamente.");
       return false;
     } finally {
@@ -708,7 +708,7 @@ async function saveStateToCloud() {
     return await cloudSavePromise;
   } catch (error) {
     pendingCloudSave = true;
-    if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Falha na sincronizaÃ§Ã£o";
+    if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Falha na sincronização";
     window.clearTimeout(pendingCloudRetryTimer);
     pendingCloudRetryTimer = window.setTimeout(saveStateToCloud, 5000);
     console.warn("Nao foi possivel salvar no Supabase.", error);
@@ -817,7 +817,7 @@ async function refreshFromCloud({ manual = false } = {}) {
   if (manual) setRefreshLoading(true);
   try {
     const ok = await loadStateFromCloud({ silent: !manual });
-    if (!ok) throw new Error("Falha na sincronizaÃ§Ã£o");
+    if (!ok) throw new Error("Falha na sincronização");
     updateLastSyncLabel(new Date());
     if (manual) showTransientMessage("Dados atualizados com sucesso.");
   } catch (error) {
@@ -1839,8 +1839,8 @@ function renderSummary() {
   const remaining = Math.max(0, goal - capital);
   const selectedWeek = getSelectedFinancialWeek();
   const weekPeriod = selectedWeek
-    ? `${selectedWeek.label} - ${DATE.format(isoToLocalDate(selectedWeek.startDate))} atÃ© ${DATE.format(isoToLocalDate(selectedWeek.endDate))}`
-    : "PerÃ­odo selecionado";
+    ? `${selectedWeek.label} - ${DATE.format(isoToLocalDate(selectedWeek.startDate))} até ${DATE.format(isoToLocalDate(selectedWeek.endDate))}`
+    : "Período selecionado";
   el.totalSold.textContent = currency(totals.totalSold);
   if (el.dashboardSalesBalance) el.dashboardSalesBalance.textContent = currency(totals.totalSold);
   if (el.feedSalesBalance) el.feedSalesBalance.textContent = currency(totals.totalSold);
@@ -1882,7 +1882,7 @@ function renderDashboardActivity() {
     .slice(0, 5)
     .map((expense) => ({
       type: "Despesa",
-      title: expense.description || "Despesa sem descriÃ§Ã£o",
+      title: expense.description || "Despesa sem descrição",
       detail: `${dateWithWeekday(expense.date)} - ${expense.status}`,
       amount: Number(expense.amount || 0),
       target: "expenses",
@@ -1908,10 +1908,10 @@ function renderDashboardActivity() {
       target: "weeklyClosings",
     }));
   const groups = [
-    ["Ãšltimas vendas", saleItems, "history"],
-    ["Ãšltimas despesas", expenseItems, "expenses"],
-    ["Ãšltimos pagamentos", paymentItems, "firmCommission"],
-    ["Ãšltimos fechamentos", closingItems, "weeklyClosings"],
+    ["Últimas vendas", saleItems, "history"],
+    ["Últimas despesas", expenseItems, "expenses"],
+    ["Últimos pagamentos", paymentItems, "firmCommission"],
+    ["Últimos fechamentos", closingItems, "weeklyClosings"],
   ];
   el.dashboardActivityFeed.innerHTML = groups
     .map(
@@ -1937,7 +1937,7 @@ function renderDashboardActivity() {
                     `,
                   )
                   .join("")
-              : `<p class="activity-empty">Nenhum registro neste perÃ­odo.</p>`
+              : `<p class="activity-empty">Nenhum registro neste período.</p>`
           }
         </section>
       `,
@@ -2354,7 +2354,7 @@ function setActiveView(viewName) {
   document.querySelectorAll("[data-view-target]").forEach((button) => {
     button.classList.toggle("active", button.dataset.viewTarget === viewName);
   });
-  el.viewTitle.textContent = viewTitles[viewName] || "Tela de InÃ­cio";
+  el.viewTitle.textContent = viewTitles[viewName] || "Tela de Início";
 }
 
 function renderExpenses() {
@@ -4241,7 +4241,7 @@ function renderSalePageList() {
   if (!rows.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state firm-empty";
-    empty.textContent = "Nenhuma venda lanÃ§ada nesta semana.";
+    empty.textContent = "Nenhuma venda lançada nesta semana.";
     el.salePageCards.append(empty);
     return;
   }
