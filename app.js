@@ -1574,6 +1574,24 @@ function setCurrencyInput(input, value) {
   input.value = currency(value);
 }
 
+function isCurrencyInputEditing(input) {
+  if (!input) return false;
+  return document.activeElement === input || input.dataset.dirty === "true";
+}
+
+function setCurrencyInputWhenIdle(input, value) {
+  if (isCurrencyInputEditing(input)) return;
+  setCurrencyInput(input, value);
+}
+
+function markCurrencyInputDirty(input) {
+  if (input) input.dataset.dirty = "true";
+}
+
+function clearCurrencyInputDirty(input) {
+  if (input) input.dataset.dirty = "false";
+}
+
 function normalizeSector(sector) {
   const text = String(sector || "1 Linha");
   if (text.includes("3")) return "3 Linha";
@@ -2135,8 +2153,8 @@ function renderCapitalSettings() {
   el.capitalSettingsUpdatedAt.textContent = lastCapitalChange
     ? formatDateTime(lastCapitalChange.changedAt)
     : "Valor inicial do sistema";
-  setCurrencyInput(el.capitalTurnoverInput, capital);
-  setCurrencyInput(el.capitalGoalInput, goal);
+  setCurrencyInputWhenIdle(el.capitalTurnoverInput, capital);
+  setCurrencyInputWhenIdle(el.capitalGoalInput, goal);
 
   el.capitalHistoryCount.textContent = `${history.length} registros`;
   el.capitalChangeHistory.innerHTML = "";
@@ -5109,6 +5127,7 @@ el.capitalTurnoverForm?.addEventListener("submit", (event) => {
   state.workingCapitalBalance = newValue;
   recordCapitalChange("capital_turnover", previousValue, newValue, reason);
   el.capitalTurnoverReason.value = "";
+  clearCurrencyInputDirty(el.capitalTurnoverInput);
   saveState();
   render();
   el.capitalTurnoverSaveBtn.disabled = false;
@@ -5132,6 +5151,7 @@ el.capitalGoalForm?.addEventListener("submit", (event) => {
   state.capitalGoal = newValue;
   recordCapitalChange("capital_goal", previousValue, newValue, reason);
   el.capitalGoalReason.value = "";
+  clearCurrencyInputDirty(el.capitalGoalInput);
   saveState();
   render();
   el.capitalGoalSaveBtn.disabled = false;
@@ -5177,6 +5197,7 @@ el.simulationForm.addEventListener("submit", (event) => {
   (input) => {
     if (!input) return;
     input.addEventListener("input", () => {
+      if (input === el.capitalTurnoverInput || input === el.capitalGoalInput) markCurrencyInputDirty(input);
       if (input === el.saleAmount) renderPreview();
       if (input === el.saleEditAmount) renderSaleEditChanges();
       if (input === el.simulationAmount) renderSimulation();
