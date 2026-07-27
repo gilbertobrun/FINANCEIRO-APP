@@ -359,6 +359,18 @@
             <button class="ghost-button" type="button" data-view-target="firmCommission" data-admin-only>Firma da semana</button>
             <button class="ghost-button" type="button" data-view-target="linePayments">Comprovantes</button>
           </div>
+          <div class="late-closing-panel" data-admin-only>
+            <div>
+              <span>Fechamento atrasado</span>
+              <strong id="lateClosingStatus">Modo normal de lançamento</strong>
+              <small>Use para lançar vendas e despesas direto na semana selecionada, sem precisar lembrar a data.</small>
+            </div>
+            <div class="late-closing-actions">
+              <button id="activateLateClosingBtn" class="primary-button" type="button">Lançar nesta semana</button>
+              <button id="moveTodayToSelectedWeekBtn" class="ghost-button" type="button">Mover lançamentos de hoje</button>
+              <button id="deactivateLateClosingBtn" class="ghost-button" type="button">Voltar ao normal</button>
+            </div>
+          </div>
         </section>
 
         </section>
@@ -1152,7 +1164,7 @@
     </dialog>
 
     <script src="./migration-data.js?v=20260624-permissoes"></script>
-    <script src="./financeiro.js?v=20260727-recuperar-fechamento"></script>
+    <script src="./financeiro.js?v=20260727-fechamento-atrasado-seguro"></script>
   </body>
 </html>
 

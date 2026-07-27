@@ -62,6 +62,7 @@ const defaults = {
   weeklyClosedAt: null,
   selectedFinanceMonth: todayISO().slice(0, 7),
   selectedFinanceWeek: null,
+  lateClosingWeekId: null,
   calendarMonth: todayISO().slice(0, 7),
   calendarSelectedDate: todayISO(),
   workingCapitalBalance: WORKING_CAPITAL,
@@ -298,6 +299,10 @@ const el = {
   capitalChangeHistory: document.querySelector("#capitalChangeHistory"),
   closeSelectedWeekBtn: document.querySelector("#closeSelectedWeekBtn"),
   closeSelectedWeekFromHistoryBtn: document.querySelector("#closeSelectedWeekFromHistoryBtn"),
+  lateClosingStatus: document.querySelector("#lateClosingStatus"),
+  activateLateClosingBtn: document.querySelector("#activateLateClosingBtn"),
+  moveTodayToSelectedWeekBtn: document.querySelector("#moveTodayToSelectedWeekBtn"),
+  deactivateLateClosingBtn: document.querySelector("#deactivateLateClosingBtn"),
   weekTotalSales: document.querySelector("#weekTotalSales"),
   weekTotalExpenses: document.querySelector("#weekTotalExpenses"),
   weekTotalReceipts: document.querySelector("#weekTotalReceipts"),
@@ -425,6 +430,7 @@ function loadState() {
       weeklyClosedAt: parsed.weeklyClosedAt || null,
       selectedFinanceMonth: parsed.selectedFinanceMonth || todayISO().slice(0, 7),
       selectedFinanceWeek: parsed.selectedFinanceWeek || null,
+      lateClosingWeekId: parsed.lateClosingWeekId || null,
       calendarMonth: parsed.calendarMonth || parsed.selectedFinanceMonth || todayISO().slice(0, 7),
       calendarSelectedDate: parsed.calendarSelectedDate || todayISO(),
       workingCapitalBalance: Math.max(0, Number(parsed.workingCapitalBalance ?? 0)),
@@ -632,6 +638,7 @@ function mergeCloudStates(localData = {}, cloudData = {}) {
     capitalChangeHistory: mergeById(localData.capitalChangeHistory, cloudData.capitalChangeHistory),
     selectedFinanceMonth: localData.selectedFinanceMonth || cloudData.selectedFinanceMonth || todayISO().slice(0, 7),
     selectedFinanceWeek: localData.selectedFinanceWeek || cloudData.selectedFinanceWeek || null,
+    lateClosingWeekId: localData.lateClosingWeekId || cloudData.lateClosingWeekId || null,
     calendarMonth: localData.calendarMonth || cloudData.calendarMonth || todayISO().slice(0, 7),
     calendarSelectedDate: localData.calendarSelectedDate || cloudData.calendarSelectedDate || todayISO(),
     workingCapitalBalance:
@@ -1077,6 +1084,7 @@ function capitalChangeLabel(type) {
 }
 
 function recordCapitalChange(changeType, previousValue, newValue, reason) {
+  const meta = lateClosingMeta();
   state.capitalChangeHistory = Array.isArray(state.capitalChangeHistory) ? state.capitalChangeHistory : [];
   state.capitalChangeHistory.unshift({
     id: crypto.randomUUID(),
@@ -1086,6 +1094,8 @@ function recordCapitalChange(changeType, previousValue, newValue, reason) {
     reason: String(reason || "").trim(),
     changedBy: currentSession() || "sistema",
     changedAt: new Date().toISOString(),
+    date: operationalDate(todayISO()),
+    ...meta,
   });
   writeAuditLog("capital.change", {
     changeType,
@@ -1313,6 +1323,32 @@ function getSelectedFinancialWeek() {
   const weeks = getFinancialWeeks(monthKey);
   const currentWeek = getCurrentFinancialWeek(monthKey);
   return weeks.find((week) => week.id === state.selectedFinanceWeek) || currentWeek || weeks[0];
+}
+
+function getLateClosingWeek() {
+  if (!state.lateClosingWeekId) return null;
+  const monthKey = state.lateClosingWeekId.slice(0, 7);
+  return getFinancialWeeks(monthKey).find((week) => week.id === state.lateClosingWeekId) || null;
+}
+
+function lateClosingDate(fallback = todayISO()) {
+  const week = getLateClosingWeek();
+  return week?.closingDate || fallback || todayISO();
+}
+
+function lateClosingMeta() {
+  const week = getLateClosingWeek();
+  if (!week) return null;
+  return {
+    lateClosing: true,
+    lateClosingWeekId: week.id,
+    lateClosingWeekKey: weekKey(week),
+    lateClosingPeriod: `${week.startDate} a ${week.endDate}`,
+  };
+}
+
+function operationalDate(inputDate) {
+  return state.lateClosingWeekId ? lateClosingDate(inputDate) : inputDate || todayISO();
 }
 
 function syncFinanceWeekToToday({ force = false } = {}) {
@@ -1770,14 +1806,16 @@ function transferCashBalanceToWorkingCapital(amount, note = "Sobra do caixa apos
   const available = summarize().cashBalance;
   const transferAmount = Math.min(Math.max(0, Number(amount || 0)), available);
   if (transferAmount <= 0) return false;
+  const meta = lateClosingMeta();
   state.firmAllocations.unshift({
     id: crypto.randomUUID(),
     type: "cash_working_capital",
     amount: transferAmount,
-    date: todayISO(),
+    date: operationalDate(todayISO()),
     notes: note,
     createdBy: currentSession(),
     createdAt: new Date().toISOString(),
+    ...meta,
   });
   state.workingCapitalBalance = Number(state.workingCapitalBalance || 0) + transferAmount;
   return true;
@@ -2143,6 +2181,7 @@ function renderFinanceWeekSelector() {
   const monthKey = state.selectedFinanceMonth || todayISO().slice(0, 7);
   const weeks = getFinancialWeeks(monthKey);
   const selectedWeek = getSelectedFinancialWeek();
+  const lateWeek = getLateClosingWeek();
   if (el.financeMonthLabel) el.financeMonthLabel.textContent = monthLabel(monthKey);
   if (el.financeWeekTabs) {
     const weekOptions = weeks
@@ -2175,6 +2214,23 @@ function renderFinanceWeekSelector() {
     el.selectedWeekStatus.textContent = status;
     el.selectedWeekStatus.className = `week-status-badge status-${status.toLowerCase().replace(/\s+/g, "-")}`;
   }
+  if (el.lateClosingStatus) {
+    if (lateWeek) {
+      el.lateClosingStatus.textContent = `Ativo: lançamentos entram em ${DATE.format(isoToLocalDate(lateWeek.closingDate))} (${lateWeek.label})`;
+      [el.saleDate, el.expenseDate, el.firmAllocationDate].forEach((input) => {
+        if (!input) return;
+        input.value = lateWeek.closingDate;
+        input.title = "Modo fechamento atrasado ativo. A data sera aplicada pela semana selecionada.";
+      });
+    } else {
+      el.lateClosingStatus.textContent = "Modo normal de lançamento";
+      [el.saleDate, el.expenseDate, el.firmAllocationDate].forEach((input) => {
+        if (input) input.title = "";
+      });
+    }
+  }
+  el.activateLateClosingBtn?.classList.toggle("active", Boolean(lateWeek));
+  if (el.deactivateLateClosingBtn) el.deactivateLateClosingBtn.disabled = !lateWeek;
 }
 
 function renderSelectedWeekCards() {
@@ -2572,22 +2628,24 @@ function renderExpenses() {
       );
       if (!confirmed) return;
       if (paymentSource === "working_capital") {
+        const meta = lateClosingMeta();
         state.workingCapitalBalance = Math.max(0, workingCapital - amount);
         state.firmAllocations.unshift({
           id: crypto.randomUUID(),
           type: "working_capital_expense",
           amount,
-          date: expense.date,
+          date: operationalDate(expense.date),
           expenseDate: expense.date,
-          paidDate: todayISO(),
+          paidDate: operationalDate(todayISO()),
           expenseId: expense.id,
           notes: `Pagamento de despesa pelo giro: ${expense.description || "Despesa"}`,
           createdBy: currentSession(),
           createdAt: new Date().toISOString(),
+          ...meta,
         });
       }
       expense.status = "Pago";
-      expense.paidDate = todayISO();
+      expense.paidDate = operationalDate(todayISO());
       expense.paidFrom = paymentSource;
       writeAuditLog("expense.pay", {
         expenseId: expense.id,
@@ -3806,6 +3864,88 @@ function getSelectedHistoryScope() {
   };
 }
 
+function activateLateClosingMode() {
+  if (!isAdmin()) return;
+  const week = getSelectedFinancialWeek();
+  if (!week) return;
+  if (
+    !window.confirm(
+      `Ativar lançamentos para ${week.label} (${DATE.format(isoToLocalDate(week.startDate))} a ${DATE.format(
+        isoToLocalDate(week.endDate),
+      )})?\n\nVendas, despesas, firma e giro de capital lançados agora entrarão nesta semana.`,
+    )
+  ) {
+    return;
+  }
+  state.lateClosingWeekId = week.id;
+  saveState();
+  render();
+}
+
+function deactivateLateClosingMode() {
+  if (!isAdmin()) return;
+  if (!state.lateClosingWeekId) return;
+  if (!window.confirm("Voltar ao modo normal de lançamento para a semana atual?")) return;
+  state.lateClosingWeekId = null;
+  saveState();
+  render();
+}
+
+function moveTodayRecordsToSelectedWeek() {
+  if (!isAdmin()) return;
+  const week = getSelectedFinancialWeek();
+  if (!week) return;
+  const sourceDate = todayISO();
+  const targetDate = week.closingDate;
+  const meta = {
+    lateClosing: true,
+    lateClosingWeekId: week.id,
+    lateClosingWeekKey: weekKey(week),
+    lateClosingPeriod: `${week.startDate} a ${week.endDate}`,
+  };
+  const sales = activeSales().filter((sale) => sale.date === sourceDate);
+  const expenses = activeExpenses().filter((expense) => expense.date === sourceDate || expense.paidDate === sourceDate);
+  const allocations = (state.firmAllocations || []).filter((allocation) => allocation.date === sourceDate || allocation.paidDate === sourceDate);
+  const changes = (state.capitalChangeHistory || []).filter((entry) => String(entry.changedAt || "").slice(0, 10) === sourceDate || entry.date === sourceDate);
+  const total = sales.length + expenses.length + allocations.length + changes.length;
+  if (!total) {
+    alert("Nao encontrei lancamentos de hoje para mover.");
+    return;
+  }
+  if (
+    !window.confirm(
+      `Mover ${total} lancamento(s) de hoje para ${week.label}, data ${DATE.format(isoToLocalDate(targetDate))}?`,
+    )
+  ) {
+    return;
+  }
+  sales.forEach((sale) => Object.assign(sale, { date: targetDate, movedFromDate: sourceDate, ...meta }));
+  expenses.forEach((expense) => {
+    if (expense.date === sourceDate) expense.date = targetDate;
+    if (expense.paidDate === sourceDate) expense.paidDate = targetDate;
+    Object.assign(expense, { movedFromDate: sourceDate, ...meta });
+  });
+  allocations.forEach((allocation) => {
+    if (allocation.date === sourceDate) allocation.date = targetDate;
+    if (allocation.paidDate === sourceDate) allocation.paidDate = targetDate;
+    if (allocation.expenseDate === sourceDate) allocation.expenseDate = targetDate;
+    Object.assign(allocation, { movedFromDate: sourceDate, ...meta });
+  });
+  changes.forEach((entry) => Object.assign(entry, { date: targetDate, movedFromDate: sourceDate, ...meta }));
+  writeAuditLog("late_closing.move_today", {
+    sourceDate,
+    targetDate,
+    weekId: week.id,
+    sales: sales.length,
+    expenses: expenses.length,
+    allocations: allocations.length,
+    capitalChanges: changes.length,
+  });
+  saveState();
+  render();
+  alert("Lancamentos movidos para a semana selecionada.");
+}
+
 function renderWeekArchiveFilter() {
   if (!el.weekArchiveFilter) return;
   const week = getSelectedFinancialWeek();
@@ -4656,13 +4796,14 @@ el.saleForm.addEventListener("submit", async (event) => {
   }
   const sale = {
     id: crypto.randomUUID(),
-    date: el.saleDate.value,
+    date: operationalDate(el.saleDate.value),
     client: "",
     agentIds,
     amount,
     format: el.saleFormat.value,
     status: el.saleStatus.value,
     notes: el.saleNotes.value.trim(),
+    ...lateClosingMeta(),
   };
   sale.calculationSnapshot = calculateSale(sale, false);
   state.sales.unshift(sale);
@@ -4838,10 +4979,11 @@ el.expenseForm.addEventListener("submit", async (event) => {
   }
   const expense = {
     id: crypto.randomUUID(),
-    date: el.expenseDate.value,
+    date: operationalDate(el.expenseDate.value),
     description: el.expenseDescription.value.trim(),
     amount,
     status: "Pendente",
+    ...lateClosingMeta(),
   };
   state.expenses.unshift(expense);
   writeAuditLog("expense.create", {
@@ -4895,14 +5037,16 @@ el.firmAllocationForm.addEventListener("submit", (event) => {
     working_capital: "Giro de capital",
   };
   if (!window.confirm(`Confirma ${currency(amount)} para ${labels[type]}?`)) return;
+  const allocationDate = operationalDate(el.firmAllocationDate.value);
   state.firmAllocations.unshift({
     id: crypto.randomUUID(),
     type,
     amount,
-    date: el.firmAllocationDate.value,
+    date: allocationDate,
     notes: el.firmAllocationNotes.value.trim(),
     createdBy: currentSession(),
     createdAt: new Date().toISOString(),
+    ...lateClosingMeta(),
   });
   if (type === "working_capital") {
     state.workingCapitalBalance = Number(state.workingCapitalBalance || 0) + amount;
@@ -4910,7 +5054,7 @@ el.firmAllocationForm.addEventListener("submit", (event) => {
   writeAuditLog("firm_allocation.create", {
     type,
     amount,
-    date: el.firmAllocationDate.value,
+    date: allocationDate,
     notes: el.firmAllocationNotes.value.trim(),
   });
   el.firmAllocationForm.reset();
@@ -5076,6 +5220,9 @@ el.nextFinanceMonthBtn?.addEventListener("click", () => {
 });
 el.closeSelectedWeekBtn?.addEventListener("click", closeSelectedWeek);
 el.closeSelectedWeekFromHistoryBtn?.addEventListener("click", closeSelectedWeek);
+el.activateLateClosingBtn?.addEventListener("click", activateLateClosingMode);
+el.moveTodayToSelectedWeekBtn?.addEventListener("click", moveTodayRecordsToSelectedWeek);
+el.deactivateLateClosingBtn?.addEventListener("click", deactivateLateClosingMode);
 el.closingMonthFilter?.addEventListener("change", renderWeeklyClosings);
 el.closingYearFilter?.addEventListener("change", renderWeeklyClosings);
 el.prevCalendarMonthBtn?.addEventListener("click", () => {
