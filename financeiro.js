@@ -815,7 +815,7 @@ async function writeAuditLog(action, details = {}) {
 async function saveWeeklyClosingToCloud(closing) {
   try {
     const authSession = await refreshAuthSessionIfNeeded();
-    if (!authSession?.access_token || !SUPABASE_URL || !SUPABASE_KEY || !closing?.weekKey) return;
+    if (!authSession?.access_token || !SUPABASE_URL || !SUPABASE_KEY || !closing?.weekKey) return false;
     const totals = closing.totals || {};
     const response = await fetch(`${SUPABASE_WEEKLY_CLOSINGS_ENDPOINT}?on_conflict=week_key`, {
       method: "POST",
@@ -843,8 +843,10 @@ async function saveWeeklyClosingToCloud(closing) {
       }),
     });
     if (!response.ok) throw new Error(`Fechamento Supabase ${response.status}`);
+    return true;
   } catch (error) {
     console.warn("Nao foi possivel salvar fechamento semanal estruturado.", error);
+    return false;
   }
 }
 
@@ -1409,54 +1411,23 @@ function wasDeletedByWeeklyClose(item) {
   return Boolean(item?.is_deleted || item?.deleted_at) && reason.includes("fechamento semanal");
 }
 
-function restoreClosedWeekRecords(week) {
-  if (!week) return false;
-  const key = weekKey(week);
-  if (restoredClosedWeekKeys.has(key)) return false;
-  restoredClosedWeekKeys.add(key);
+function clearDeletionForRead(item) {
+  const copy = { ...(item || {}) };
+  delete copy.is_deleted;
+  delete copy.deleted_at;
+  delete copy.deleted_by;
+  delete copy.deletion_reason;
+  return copy;
+}
 
-  const restoreItem = (item) => {
-    item.restored_from_weekly_close = true;
-    item.restored_at = item.restored_at || new Date().toISOString();
-    item.restored_by = item.restored_by || currentSession();
-    delete item.is_deleted;
-    delete item.deleted_at;
-    delete item.deleted_by;
-    delete item.deletion_reason;
-  };
-  const restored = {
-    sales: 0,
-    expenses: 0,
-    allocations: 0,
-  };
+function recordVisibleForWeek(item, date, week) {
+  if (!item || !week || !isWithinPeriod(date, week.startDate, week.endDate)) return false;
+  return !item.is_deleted && !item.deleted_at;
+}
 
-  (state.sales || []).forEach((sale) => {
-    if (!wasDeletedByWeeklyClose(sale) || !isWithinPeriod(sale.date, week.startDate, week.endDate)) return;
-    restoreItem(sale);
-    restored.sales += 1;
-  });
-  (state.expenses || []).forEach((expense) => {
-    if (!wasDeletedByWeeklyClose(expense) || !isWithinPeriod(expense.date, week.startDate, week.endDate)) return;
-    restoreItem(expense);
-    restored.expenses += 1;
-  });
-  (state.firmAllocations || []).forEach((allocation) => {
-    const date = allocationAccountingDate(allocation);
-    if (!wasDeletedByWeeklyClose(allocation) || !isWithinPeriod(date, week.startDate, week.endDate)) return;
-    restoreItem(allocation);
-    restored.allocations += 1;
-  });
-
-  const totalRestored = restored.sales + restored.expenses + restored.allocations;
-  if (!totalRestored) return false;
-  writeAuditLog("week.restore_from_close", {
-    weekKey: key,
-    startDate: week.startDate,
-    endDate: week.endDate,
-    ...restored,
-  });
-  saveState();
-  return true;
+function closedRecordVisibleForWeek(item, date, week) {
+  if (!item || !week || !isWithinPeriod(date, week.startDate, week.endDate)) return false;
+  return wasDeletedByWeeklyClose(item);
 }
 
 function normalizeText(value) {
@@ -1489,17 +1460,53 @@ function allocationAccountingDate(allocation) {
 
 function recordsForWeek(week) {
   if (!week) return { sales: [], expenses: [], allocations: [] };
-  restoreClosedWeekRecords(week);
-  const sales = activeSales().filter((sale) => isWithinPeriod(sale.date, week.startDate, week.endDate));
-  const expenses = activeExpenses().filter((expense) => isWithinPeriod(expense.date, week.startDate, week.endDate));
-  const allocations = activeAllocations().filter((allocation) =>
-    isWithinPeriod(allocationAccountingDate(allocation), week.startDate, week.endDate),
-  );
+  const sales = (state.sales || [])
+    .filter((sale) => recordVisibleForWeek(sale, sale.date, week) || closedRecordVisibleForWeek(sale, sale.date, week))
+    .map((sale) => (wasDeletedByWeeklyClose(sale) ? clearDeletionForRead(sale) : sale));
+  const expenses = (state.expenses || [])
+    .filter((expense) => recordVisibleForWeek(expense, expense.date, week) || closedRecordVisibleForWeek(expense, expense.date, week))
+    .map((expense) => (wasDeletedByWeeklyClose(expense) ? clearDeletionForRead(expense) : expense));
+  const allocations = (state.firmAllocations || [])
+    .filter((allocation) => {
+      const date = allocationAccountingDate(allocation);
+      return recordVisibleForWeek(allocation, date, week) || closedRecordVisibleForWeek(allocation, date, week);
+    })
+    .map((allocation) => (wasDeletedByWeeklyClose(allocation) ? clearDeletionForRead(allocation) : allocation));
   return { sales, expenses, allocations };
 }
 
 function getOperationalRecords() {
   return recordsForWeek(getSelectedFinancialWeek());
+}
+
+function markWeekRecordsAsClosed(week, closingId) {
+  const now = new Date().toISOString();
+  const reason = `Fechamento semanal ${weekKey(week)}`;
+  const markItem = (item) => {
+    item.is_deleted = true;
+    item.deleted_at = now;
+    item.deleted_by = currentSession();
+    item.deletion_reason = reason;
+    item.weekly_closing_id = closingId;
+  };
+  const closed = { sales: 0, expenses: 0, allocations: 0 };
+  (state.sales || []).forEach((sale) => {
+    if (!recordVisibleForWeek(sale, sale.date, week)) return;
+    markItem(sale);
+    closed.sales += 1;
+  });
+  (state.expenses || []).forEach((expense) => {
+    if (!recordVisibleForWeek(expense, expense.date, week)) return;
+    markItem(expense);
+    closed.expenses += 1;
+  });
+  (state.firmAllocations || []).forEach((allocation) => {
+    const date = allocationAccountingDate(allocation);
+    if (!recordVisibleForWeek(allocation, date, week)) return;
+    markItem(allocation);
+    closed.allocations += 1;
+  });
+  return closed;
 }
 
 function summarizePeriod({ sales = [], expenses = [], allocations = [] } = {}) {
@@ -2336,7 +2343,7 @@ function renderWeeklyReport() {
     .join("");
 }
 
-function closeSelectedWeek() {
+async function closeSelectedWeek() {
   if (!isAdmin()) return;
   const week = getSelectedFinancialWeek();
   if (!week) return;
@@ -2362,6 +2369,7 @@ function closeSelectedWeek() {
   ].join("\n");
   if (!window.confirm(summary)) return;
   const notes = window.prompt("Observacao opcional do fechamento:", "") || "";
+  const previousState = sanitizeForCloud(state);
   const closing = {
     id: crypto.randomUUID(),
     weekKey: weekKey(week),
@@ -2378,13 +2386,30 @@ function closeSelectedWeek() {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
+  const closedRecords = markWeekRecordsAsClosed(week, closing.id);
+  closing.closedRecords = closedRecords;
   state.weeklyClosings = (state.weeklyClosings || []).filter((item) => item.weekKey !== closing.weekKey);
   state.weeklyClosings.unshift(closing);
+  state.weeklyClosedAt = closing.closedAt;
+  state.lateClosingWeekId = null;
+  syncFinanceWeekToToday(true);
   writeAuditLog("weekly_closing.close", closing);
-  saveWeeklyClosingToCloud(closing);
   saveState();
   render();
-  alert("Semana fechada com sucesso. Os dados permaneceram no historico.");
+  const cloudOk = await confirmCriticalCloudSave("fechamento semanal");
+  const closingOk = await saveWeeklyClosingToCloud(closing);
+  if (!cloudOk) {
+    state = loadStateFromObject(previousState);
+    clearPendingCloudSave();
+    saveState();
+    render();
+    alert("O fechamento NAO foi concluido porque a nuvem nao confirmou. Confira a conexao e tente novamente.");
+    return;
+  }
+  if (!closingOk) {
+    console.warn("Fechamento salvo no estado principal, mas o resumo estruturado nao foi confirmado.");
+  }
+  alert("Semana fechada com sucesso. A semana atual ficou limpa e o historico foi preservado.");
 }
 
 function renderWeeklyClosings() {
