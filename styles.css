@@ -421,6 +421,8 @@
 .late-closing-actions .primary-button,
 .late-closing-actions .ghost-button {
   min-height: 44px;
+  min-width: 180px;
+  padding-inline: 18px;
   white-space: nowrap;
 }
 
@@ -6816,7 +6818,28 @@ h2 {
 
 [data-view="generalHistory"] .finance-week-shell {
   display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(320px, 1.4fr);
+  align-items: stretch;
   gap: 16px;
+}
+
+[data-view="generalHistory"] .finance-week-summary {
+  grid-column: 1 / -1;
+  justify-items: stretch;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(242, 205, 115, 0.18);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.24);
+}
+
+[data-view="generalHistory"] .general-history-actions,
+[data-view="generalHistory"] .late-closing-panel {
+  grid-column: 1 / -1;
 }
 
 [data-view="generalHistory"] .weekly-report {
@@ -6825,7 +6848,13 @@ h2 {
 
 @media (max-width: 767.98px) {
   [data-view="generalHistory"] .finance-week-shell {
+    grid-template-columns: 1fr;
     padding: 16px !important;
+  }
+
+  [data-view="generalHistory"] .finance-week-summary {
+    display: grid;
+    justify-items: start;
   }
 
   .general-history-actions {
