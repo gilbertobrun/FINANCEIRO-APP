@@ -53,6 +53,7 @@ const SALE_FORMATS = {
   bank40: "Imposto 40%",
   bank40Special: "40% especial",
 };
+const restoredClosedWeekKeys = new Set();
 
 const defaults = {
   dataVersion: DATA_VERSION,
@@ -1302,6 +1303,61 @@ function activeAllocations(allocations = state.firmAllocations) {
   return (allocations || []).filter((allocation) => !allocation.is_deleted && !allocation.deleted_at);
 }
 
+function wasDeletedByWeeklyClose(item) {
+  const reason = normalizeText(item?.deletion_reason || "");
+  return Boolean(item?.is_deleted || item?.deleted_at) && reason.includes("fechamento semanal");
+}
+
+function restoreClosedWeekRecords(week) {
+  if (!week) return false;
+  const key = weekKey(week);
+  if (restoredClosedWeekKeys.has(key)) return false;
+  restoredClosedWeekKeys.add(key);
+
+  const restoreItem = (item) => {
+    item.restored_from_weekly_close = true;
+    item.restored_at = item.restored_at || new Date().toISOString();
+    item.restored_by = item.restored_by || currentSession();
+    delete item.is_deleted;
+    delete item.deleted_at;
+    delete item.deleted_by;
+    delete item.deletion_reason;
+  };
+  const restored = {
+    sales: 0,
+    expenses: 0,
+    allocations: 0,
+  };
+
+  (state.sales || []).forEach((sale) => {
+    if (!wasDeletedByWeeklyClose(sale) || !isWithinPeriod(sale.date, week.startDate, week.endDate)) return;
+    restoreItem(sale);
+    restored.sales += 1;
+  });
+  (state.expenses || []).forEach((expense) => {
+    if (!wasDeletedByWeeklyClose(expense) || !isWithinPeriod(expense.date, week.startDate, week.endDate)) return;
+    restoreItem(expense);
+    restored.expenses += 1;
+  });
+  (state.firmAllocations || []).forEach((allocation) => {
+    const date = allocationAccountingDate(allocation);
+    if (!wasDeletedByWeeklyClose(allocation) || !isWithinPeriod(date, week.startDate, week.endDate)) return;
+    restoreItem(allocation);
+    restored.allocations += 1;
+  });
+
+  const totalRestored = restored.sales + restored.expenses + restored.allocations;
+  if (!totalRestored) return false;
+  writeAuditLog("week.restore_from_close", {
+    weekKey: key,
+    startDate: week.startDate,
+    endDate: week.endDate,
+    ...restored,
+  });
+  saveState();
+  return true;
+}
+
 function normalizeText(value) {
   return String(value || "")
     .normalize("NFD")
@@ -1332,6 +1388,7 @@ function allocationAccountingDate(allocation) {
 
 function recordsForWeek(week) {
   if (!week) return { sales: [], expenses: [], allocations: [] };
+  restoreClosedWeekRecords(week);
   const sales = activeSales().filter((sale) => isWithinPeriod(sale.date, week.startDate, week.endDate));
   const expenses = activeExpenses().filter((expense) => isWithinPeriod(expense.date, week.startDate, week.endDate));
   const allocations = activeAllocations().filter((allocation) =>
