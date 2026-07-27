@@ -6,6 +6,7 @@ const BACKUP_KEY = "financeiro-consignado-backup-v1";
 const DELETED_SALES_KEY = "financeiro-consignado-vendas-apagadas-v1";
 const SESSION_KEY = "financeiro-consignado-session-v1";
 const AUTH_SESSION_KEY = "financeiro-consignado-auth-session-v1";
+const PENDING_CLOUD_KEY = "financeiro-consignado-pendente-nuvem-v1";
 const DATA_VERSION = 11;
 const SUPABASE_URL = "https://ziennndoyekvguymsbap.supabase.co";
 const SUPABASE_KEY = "sb_publishable_aWQWtwt359ZHxHD0uf4HKQ_Sjilej57";
@@ -474,8 +475,54 @@ function loadState() {
 function saveState() {
   state.savedAt = new Date().toISOString();
   localStorage.setItem(STORE_KEY, JSON.stringify(state));
-  updateLastSyncLabel(new Date());
+  markPendingCloudSave("Alteracao local aguardando confirmacao da nuvem");
   scheduleCloudSave();
+}
+
+function markPendingCloudSave(reason = "Alteracao pendente") {
+  pendingCloudSave = true;
+  try {
+    localStorage.setItem(
+      PENDING_CLOUD_KEY,
+      JSON.stringify({
+        reason,
+        savedAt: state.savedAt || new Date().toISOString(),
+        state: sanitizeForCloud(state),
+      }),
+    );
+  } catch (error) {
+    console.warn("Nao foi possivel criar copia pendente.", error);
+  }
+  if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Salvo neste aparelho. Enviando para a nuvem...";
+}
+
+function clearPendingCloudSave() {
+  pendingCloudSave = false;
+  window.clearTimeout(cloudSaveTimer);
+  localStorage.removeItem(PENDING_CLOUD_KEY);
+  window.clearTimeout(pendingCloudRetryTimer);
+}
+
+async function confirmCriticalCloudSave(actionName = "alteracao") {
+  const ok = await saveStateToCloud();
+  if (!ok) {
+    alert(
+      `A ${actionName} foi salva neste aparelho, mas ainda NAO foi confirmada na nuvem. ` +
+        "Nao feche o app. Confira a internet e clique em Atualizar ate aparecer Dados sincronizados.",
+    );
+    return false;
+  }
+  return true;
+}
+
+function loadPendingCloudSave() {
+  try {
+    const pending = JSON.parse(localStorage.getItem(PENDING_CLOUD_KEY) || "null");
+    return pending?.state ? pending : null;
+  } catch {
+    localStorage.removeItem(PENDING_CLOUD_KEY);
+    return null;
+  }
 }
 
 function getAuthSession() {
@@ -605,6 +652,9 @@ async function loadStateFromCloud({ silent = false } = {}) {
   cloudLoadPromise = (async () => {
     try {
       if (currentSession()) await refreshAuthSessionIfNeeded();
+      const localSnapshot = sanitizeForCloud(state);
+      const pendingSnapshot = loadPendingCloudSave();
+      const localData = pendingSnapshot?.state || localSnapshot;
       if (pendingCloudSave) {
         await saveStateToCloud();
       } else if (cloudSavePromise) {
@@ -618,7 +668,8 @@ async function loadStateFromCloud({ silent = false } = {}) {
       const cloudRow = rows?.[0];
       const cloudData = cloudRow?.data;
       if (hasMeaningfulCloudState(cloudData)) {
-        localStorage.setItem(STORE_KEY, JSON.stringify(cloudData));
+        const mergedData = mergeCloudStates(localData, cloudData);
+        localStorage.setItem(STORE_KEY, JSON.stringify(mergedData));
         state = loadState();
         migrateLoanGroups();
         migrateCalculationSnapshots();
@@ -627,8 +678,14 @@ async function loadStateFromCloud({ silent = false } = {}) {
         syncFinanceWeekToToday();
         cloudSyncEnabled = true;
         cloudUpdatedAt = cloudRow?.updated_at || cloudData.savedAt || new Date().toISOString();
-        pendingCloudSave = false;
-        window.clearTimeout(pendingCloudRetryTimer);
+        const mergedJson = JSON.stringify(sanitizeForCloud(state));
+        const cloudJson = JSON.stringify(sanitizeForCloud(cloudData));
+        if (pendingSnapshot || mergedJson !== cloudJson) {
+          markPendingCloudSave("Mescla local aguardando confirmacao da nuvem");
+          scheduleCloudSave(0);
+        } else {
+          clearPendingCloudSave();
+        }
         updateLastSyncLabel(new Date());
         render();
         if (!silent) showTransientMessage("Dados atualizados com sucesso.");
@@ -636,14 +693,14 @@ async function loadStateFromCloud({ silent = false } = {}) {
       }
       cloudSyncEnabled = true;
       cloudUpdatedAt = cloudRow?.updated_at || null;
+      markPendingCloudSave("Primeiro envio para a nuvem");
       scheduleCloudSave(0);
       updateLastSyncLabel(new Date());
       return true;
     } catch (error) {
       console.warn("Nao foi possivel sincronizar com Supabase.", error);
       cloudSyncEnabled = false;
-      pendingCloudSave = false;
-      window.clearTimeout(pendingCloudRetryTimer);
+      if (loadPendingCloudSave()) pendingCloudSave = true;
       if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Falha na sincronização";
       if (!silent) alert("Nao foi possivel atualizar os dados. Tente novamente.");
       return false;
@@ -655,7 +712,7 @@ async function loadStateFromCloud({ silent = false } = {}) {
 }
 
 function scheduleCloudSave(delay = 800) {
-  if (!cloudSyncEnabled || !SUPABASE_URL || !SUPABASE_KEY) return;
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
   pendingCloudSave = true;
   if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Sincronizando...";
   window.clearTimeout(cloudSaveTimer);
@@ -663,12 +720,17 @@ function scheduleCloudSave(delay = 800) {
 }
 
 async function saveStateToCloud() {
-  if (!cloudSyncEnabled || !SUPABASE_URL || !SUPABASE_KEY) return;
+  if (!SUPABASE_URL || !SUPABASE_KEY) return false;
+  if (!currentSession()) {
+    markPendingCloudSave("Aguardando login para sincronizar");
+    return false;
+  }
   if (cloudSavePromise) return cloudSavePromise;
   try {
     cloudSavePromise = (async () => {
       if (currentSession()) await refreshAuthSessionIfNeeded();
-      const localSnapshot = sanitizeForCloud(state);
+      const pendingSnapshot = loadPendingCloudSave();
+      const localSnapshot = sanitizeForCloud(pendingSnapshot?.state || state);
       const remoteResponse = await fetch(`${SUPABASE_STATE_ENDPOINT}?id=eq.main&select=data,updated_at`, {
         headers: supabaseHeaders({ Accept: "application/json" }),
       });
@@ -700,15 +762,14 @@ async function saveStateToCloud() {
       if (!response.ok) throw new Error(`Supabase gravacao ${response.status}`);
       const savedRow = (await response.json())?.[0];
       cloudUpdatedAt = savedRow?.updated_at || savedAt;
-      pendingCloudSave = false;
-      window.clearTimeout(pendingCloudRetryTimer);
+      clearPendingCloudSave();
       localStorage.setItem(STORE_KEY, JSON.stringify(state));
       updateLastSyncLabel(new Date());
       return true;
     })();
     return await cloudSavePromise;
   } catch (error) {
-    pendingCloudSave = true;
+    markPendingCloudSave("Falha na nuvem. Reenvio automatico pendente");
     if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Falha na sincronização";
     window.clearTimeout(pendingCloudRetryTimer);
     pendingCloudRetryTimer = window.setTimeout(saveStateToCloud, 5000);
@@ -793,6 +854,10 @@ function scheduleSettingsAudit(previousSettings, nextSettings) {
 function updateLastSyncLabel(date = new Date()) {
   lastSyncAt = date;
   if (!el.lastSyncLabel) return;
+  if (pendingCloudSave || loadPendingCloudSave()) {
+    el.lastSyncLabel.textContent = "Alterações pendentes de confirmação na nuvem";
+    return;
+  }
   el.lastSyncLabel.textContent = `Dados sincronizados: ${date.toLocaleString("pt-BR", {
     dateStyle: "short",
     timeStyle: "short",
@@ -4558,7 +4623,7 @@ window.addEventListener("appinstalled", () => {
   el.installAppBtn.classList.add("hidden");
 });
 
-el.saleForm.addEventListener("submit", (event) => {
+el.saleForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!isAdmin()) return;
   const amount = parseCurrency(el.saleAmount.value);
@@ -4613,6 +4678,7 @@ el.saleForm.addEventListener("submit", (event) => {
   el.saleFormat.value = "standard";
   setCurrencyInput(el.saleAmount, 0);
   saveState();
+  await confirmCriticalCloudSave("venda");
   render();
 });
 
@@ -4761,7 +4827,7 @@ el.agentEditForm.addEventListener("submit", (event) => {
 el.agentEditCancel.addEventListener("click", () => el.agentEditDialog.close());
 el.agentEditCancelTop.addEventListener("click", () => el.agentEditDialog.close());
 
-el.expenseForm.addEventListener("submit", (event) => {
+el.expenseForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!isAdmin()) return;
   const amount = parseCurrency(el.expenseAmount.value);
@@ -4788,6 +4854,7 @@ el.expenseForm.addEventListener("submit", (event) => {
   el.expenseDate.value = todayISO();
   setCurrencyInput(el.expenseAmount, 0);
   saveState();
+  await confirmCriticalCloudSave("despesa");
   render();
 });
 
@@ -5188,11 +5255,18 @@ el.undoResetBtn.addEventListener("click", () => {
   render();
 });
 
+const pendingStartupSave = loadPendingCloudSave();
+if (pendingStartupSave?.state) {
+  state = loadStateFromObject(mergeCloudStates(state, pendingStartupSave.state));
+  pendingCloudSave = true;
+}
+
 syncFinanceWeekToToday();
 render();
 if (currentSession()) {
   loadStateFromCloud();
   setupRealtimeSubscription();
+  if (pendingCloudSave) scheduleCloudSave(1200);
 }
 
 window.addEventListener("online", () => refreshFromCloud({ manual: false }));

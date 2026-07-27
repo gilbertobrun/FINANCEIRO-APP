@@ -1,4 +1,4 @@
-const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+﻿const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const DATE = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" });
 const WEEKDAY = new Intl.DateTimeFormat("pt-BR", { weekday: "long", timeZone: "UTC" });
 const STORE_KEY = "financeiro-consignado-v1";
@@ -6,6 +6,7 @@ const BACKUP_KEY = "financeiro-consignado-backup-v1";
 const DELETED_SALES_KEY = "financeiro-consignado-vendas-apagadas-v1";
 const SESSION_KEY = "financeiro-consignado-session-v1";
 const AUTH_SESSION_KEY = "financeiro-consignado-auth-session-v1";
+const PENDING_CLOUD_KEY = "financeiro-consignado-pendente-nuvem-v1";
 const DATA_VERSION = 11;
 const SUPABASE_URL = "https://ziennndoyekvguymsbap.supabase.co";
 const SUPABASE_KEY = "sb_publishable_aWQWtwt359ZHxHD0uf4HKQ_Sjilej57";
@@ -53,6 +54,7 @@ const SALE_FORMATS = {
   bank40: "Imposto 40%",
   bank40Special: "40% especial",
 };
+const restoredClosedWeekKeys = new Set();
 
 const defaults = {
   dataVersion: DATA_VERSION,
@@ -295,6 +297,7 @@ const el = {
   capitalHistoryCount: document.querySelector("#capitalHistoryCount"),
   capitalChangeHistory: document.querySelector("#capitalChangeHistory"),
   closeSelectedWeekBtn: document.querySelector("#closeSelectedWeekBtn"),
+  closeSelectedWeekFromHistoryBtn: document.querySelector("#closeSelectedWeekFromHistoryBtn"),
   weekTotalSales: document.querySelector("#weekTotalSales"),
   weekTotalExpenses: document.querySelector("#weekTotalExpenses"),
   weekTotalReceipts: document.querySelector("#weekTotalReceipts"),
@@ -370,7 +373,7 @@ const viewTitles = {
   linePayments: "Comprovantes",
   firmCommission: "Firma",
   history: "Histórico",
-  generalHistory: "Hist?rico Geral",
+  generalHistory: "Histórico Geral",
   weeklyClosings: "Fechamento de Caixa",
   calendar: "Calendário Financeiro",
   capitalSettings: "Edição de Giro de Capital",
@@ -472,8 +475,54 @@ function loadState() {
 function saveState() {
   state.savedAt = new Date().toISOString();
   localStorage.setItem(STORE_KEY, JSON.stringify(state));
-  updateLastSyncLabel(new Date());
+  markPendingCloudSave("Alteracao local aguardando confirmacao da nuvem");
   scheduleCloudSave();
+}
+
+function markPendingCloudSave(reason = "Alteracao pendente") {
+  pendingCloudSave = true;
+  try {
+    localStorage.setItem(
+      PENDING_CLOUD_KEY,
+      JSON.stringify({
+        reason,
+        savedAt: state.savedAt || new Date().toISOString(),
+        state: sanitizeForCloud(state),
+      }),
+    );
+  } catch (error) {
+    console.warn("Nao foi possivel criar copia pendente.", error);
+  }
+  if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Salvo neste aparelho. Enviando para a nuvem...";
+}
+
+function clearPendingCloudSave() {
+  pendingCloudSave = false;
+  window.clearTimeout(cloudSaveTimer);
+  localStorage.removeItem(PENDING_CLOUD_KEY);
+  window.clearTimeout(pendingCloudRetryTimer);
+}
+
+async function confirmCriticalCloudSave(actionName = "alteracao") {
+  const ok = await saveStateToCloud();
+  if (!ok) {
+    alert(
+      `A ${actionName} foi salva neste aparelho, mas ainda NAO foi confirmada na nuvem. ` +
+        "Nao feche o app. Confira a internet e clique em Atualizar ate aparecer Dados sincronizados.",
+    );
+    return false;
+  }
+  return true;
+}
+
+function loadPendingCloudSave() {
+  try {
+    const pending = JSON.parse(localStorage.getItem(PENDING_CLOUD_KEY) || "null");
+    return pending?.state ? pending : null;
+  } catch {
+    localStorage.removeItem(PENDING_CLOUD_KEY);
+    return null;
+  }
 }
 
 function getAuthSession() {
@@ -603,6 +652,9 @@ async function loadStateFromCloud({ silent = false } = {}) {
   cloudLoadPromise = (async () => {
     try {
       if (currentSession()) await refreshAuthSessionIfNeeded();
+      const localSnapshot = sanitizeForCloud(state);
+      const pendingSnapshot = loadPendingCloudSave();
+      const localData = pendingSnapshot?.state || localSnapshot;
       if (pendingCloudSave) {
         await saveStateToCloud();
       } else if (cloudSavePromise) {
@@ -616,7 +668,8 @@ async function loadStateFromCloud({ silent = false } = {}) {
       const cloudRow = rows?.[0];
       const cloudData = cloudRow?.data;
       if (hasMeaningfulCloudState(cloudData)) {
-        localStorage.setItem(STORE_KEY, JSON.stringify(cloudData));
+        const mergedData = mergeCloudStates(localData, cloudData);
+        localStorage.setItem(STORE_KEY, JSON.stringify(mergedData));
         state = loadState();
         migrateLoanGroups();
         migrateCalculationSnapshots();
@@ -625,8 +678,14 @@ async function loadStateFromCloud({ silent = false } = {}) {
         syncFinanceWeekToToday();
         cloudSyncEnabled = true;
         cloudUpdatedAt = cloudRow?.updated_at || cloudData.savedAt || new Date().toISOString();
-        pendingCloudSave = false;
-        window.clearTimeout(pendingCloudRetryTimer);
+        const mergedJson = JSON.stringify(sanitizeForCloud(state));
+        const cloudJson = JSON.stringify(sanitizeForCloud(cloudData));
+        if (pendingSnapshot || mergedJson !== cloudJson) {
+          markPendingCloudSave("Mescla local aguardando confirmacao da nuvem");
+          scheduleCloudSave(0);
+        } else {
+          clearPendingCloudSave();
+        }
         updateLastSyncLabel(new Date());
         render();
         if (!silent) showTransientMessage("Dados atualizados com sucesso.");
@@ -634,14 +693,14 @@ async function loadStateFromCloud({ silent = false } = {}) {
       }
       cloudSyncEnabled = true;
       cloudUpdatedAt = cloudRow?.updated_at || null;
+      markPendingCloudSave("Primeiro envio para a nuvem");
       scheduleCloudSave(0);
       updateLastSyncLabel(new Date());
       return true;
     } catch (error) {
       console.warn("Nao foi possivel sincronizar com Supabase.", error);
       cloudSyncEnabled = false;
-      pendingCloudSave = false;
-      window.clearTimeout(pendingCloudRetryTimer);
+      if (loadPendingCloudSave()) pendingCloudSave = true;
       if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Falha na sincronização";
       if (!silent) alert("Nao foi possivel atualizar os dados. Tente novamente.");
       return false;
@@ -653,7 +712,7 @@ async function loadStateFromCloud({ silent = false } = {}) {
 }
 
 function scheduleCloudSave(delay = 800) {
-  if (!cloudSyncEnabled || !SUPABASE_URL || !SUPABASE_KEY) return;
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
   pendingCloudSave = true;
   if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Sincronizando...";
   window.clearTimeout(cloudSaveTimer);
@@ -661,12 +720,17 @@ function scheduleCloudSave(delay = 800) {
 }
 
 async function saveStateToCloud() {
-  if (!cloudSyncEnabled || !SUPABASE_URL || !SUPABASE_KEY) return;
+  if (!SUPABASE_URL || !SUPABASE_KEY) return false;
+  if (!currentSession()) {
+    markPendingCloudSave("Aguardando login para sincronizar");
+    return false;
+  }
   if (cloudSavePromise) return cloudSavePromise;
   try {
     cloudSavePromise = (async () => {
       if (currentSession()) await refreshAuthSessionIfNeeded();
-      const localSnapshot = sanitizeForCloud(state);
+      const pendingSnapshot = loadPendingCloudSave();
+      const localSnapshot = sanitizeForCloud(pendingSnapshot?.state || state);
       const remoteResponse = await fetch(`${SUPABASE_STATE_ENDPOINT}?id=eq.main&select=data,updated_at`, {
         headers: supabaseHeaders({ Accept: "application/json" }),
       });
@@ -698,15 +762,14 @@ async function saveStateToCloud() {
       if (!response.ok) throw new Error(`Supabase gravacao ${response.status}`);
       const savedRow = (await response.json())?.[0];
       cloudUpdatedAt = savedRow?.updated_at || savedAt;
-      pendingCloudSave = false;
-      window.clearTimeout(pendingCloudRetryTimer);
+      clearPendingCloudSave();
       localStorage.setItem(STORE_KEY, JSON.stringify(state));
       updateLastSyncLabel(new Date());
       return true;
     })();
     return await cloudSavePromise;
   } catch (error) {
-    pendingCloudSave = true;
+    markPendingCloudSave("Falha na nuvem. Reenvio automatico pendente");
     if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Falha na sincronização";
     window.clearTimeout(pendingCloudRetryTimer);
     pendingCloudRetryTimer = window.setTimeout(saveStateToCloud, 5000);
@@ -791,6 +854,10 @@ function scheduleSettingsAudit(previousSettings, nextSettings) {
 function updateLastSyncLabel(date = new Date()) {
   lastSyncAt = date;
   if (!el.lastSyncLabel) return;
+  if (pendingCloudSave || loadPendingCloudSave()) {
+    el.lastSyncLabel.textContent = "Alterações pendentes de confirmação na nuvem";
+    return;
+  }
   el.lastSyncLabel.textContent = `Dados sincronizados: ${date.toLocaleString("pt-BR", {
     dateStyle: "short",
     timeStyle: "short",
@@ -1248,18 +1315,20 @@ function getSelectedFinancialWeek() {
   return weeks.find((week) => week.id === state.selectedFinanceWeek) || currentWeek || weeks[0];
 }
 
-function syncFinanceWeekToToday() {
+function syncFinanceWeekToToday({ force = false } = {}) {
   const today = todayISO();
   const todayMonth = today.slice(0, 7);
   const currentWeek = getCurrentFinancialWeek(todayMonth);
-  const selectedWeek = getSelectedFinancialWeek();
-  const shouldMoveToCurrentWeek =
-    !state.selectedFinanceMonth ||
-    state.selectedFinanceMonth !== todayMonth ||
-    !selectedWeek ||
-    today > selectedWeek.endDate;
+  if (!currentWeek) return false;
 
-  if (!currentWeek || !shouldMoveToCurrentWeek) return false;
+  const selectedWeekExists = Boolean(
+    state.selectedFinanceMonth &&
+      state.selectedFinanceWeek &&
+      getFinancialWeeks(state.selectedFinanceMonth).some((week) => week.id === state.selectedFinanceWeek),
+  );
+  const shouldMoveToCurrentWeek = force || !selectedWeekExists;
+
+  if (!shouldMoveToCurrentWeek) return false;
   state.selectedFinanceMonth = todayMonth;
   state.selectedFinanceWeek = currentWeek.id;
   return true;
@@ -1299,6 +1368,61 @@ function activeAllocations(allocations = state.firmAllocations) {
   return (allocations || []).filter((allocation) => !allocation.is_deleted && !allocation.deleted_at);
 }
 
+function wasDeletedByWeeklyClose(item) {
+  const reason = normalizeText(item?.deletion_reason || "");
+  return Boolean(item?.is_deleted || item?.deleted_at) && reason.includes("fechamento semanal");
+}
+
+function restoreClosedWeekRecords(week) {
+  if (!week) return false;
+  const key = weekKey(week);
+  if (restoredClosedWeekKeys.has(key)) return false;
+  restoredClosedWeekKeys.add(key);
+
+  const restoreItem = (item) => {
+    item.restored_from_weekly_close = true;
+    item.restored_at = item.restored_at || new Date().toISOString();
+    item.restored_by = item.restored_by || currentSession();
+    delete item.is_deleted;
+    delete item.deleted_at;
+    delete item.deleted_by;
+    delete item.deletion_reason;
+  };
+  const restored = {
+    sales: 0,
+    expenses: 0,
+    allocations: 0,
+  };
+
+  (state.sales || []).forEach((sale) => {
+    if (!wasDeletedByWeeklyClose(sale) || !isWithinPeriod(sale.date, week.startDate, week.endDate)) return;
+    restoreItem(sale);
+    restored.sales += 1;
+  });
+  (state.expenses || []).forEach((expense) => {
+    if (!wasDeletedByWeeklyClose(expense) || !isWithinPeriod(expense.date, week.startDate, week.endDate)) return;
+    restoreItem(expense);
+    restored.expenses += 1;
+  });
+  (state.firmAllocations || []).forEach((allocation) => {
+    const date = allocationAccountingDate(allocation);
+    if (!wasDeletedByWeeklyClose(allocation) || !isWithinPeriod(date, week.startDate, week.endDate)) return;
+    restoreItem(allocation);
+    restored.allocations += 1;
+  });
+
+  const totalRestored = restored.sales + restored.expenses + restored.allocations;
+  if (!totalRestored) return false;
+  writeAuditLog("week.restore_from_close", {
+    weekKey: key,
+    startDate: week.startDate,
+    endDate: week.endDate,
+    ...restored,
+  });
+  saveState();
+  return true;
+}
+
 function normalizeText(value) {
   return String(value || "")
     .normalize("NFD")
@@ -1329,6 +1453,7 @@ function allocationAccountingDate(allocation) {
 
 function recordsForWeek(week) {
   if (!week) return { sales: [], expenses: [], allocations: [] };
+  restoreClosedWeekRecords(week);
   const sales = activeSales().filter((sale) => isWithinPeriod(sale.date, week.startDate, week.endDate));
   const expenses = activeExpenses().filter((expense) => isWithinPeriod(expense.date, week.startDate, week.endDate));
   const allocations = activeAllocations().filter((allocation) =>
@@ -2064,11 +2189,11 @@ function renderSelectedWeekCards() {
   el.weekTargetValue.textContent = currency(totals.targetValue);
   el.weekTargetPercent.textContent = `${totals.targetPercent.toFixed(0)}%`;
   el.weekCapitalTurnover.textContent = currency(totals.capitalTurnover);
-  if (el.closeSelectedWeekBtn) {
-    const status = financialWeekStatus(week);
-    el.closeSelectedWeekBtn.disabled = !isAdmin() || status === "Fechada" || status === "Futura";
-    el.closeSelectedWeekBtn.textContent = status === "Fechada" ? "Semana fechada" : "Fechar semana";
-  }
+  const status = financialWeekStatus(week);
+  [el.closeSelectedWeekBtn, el.closeSelectedWeekFromHistoryBtn].filter(Boolean).forEach((button) => {
+    button.disabled = !isAdmin() || status === "Fechada" || status === "Futura";
+    button.textContent = status === "Fechada" ? "Semana fechada" : "Fechar semana selecionada";
+  });
 }
 
 function renderWeeklyReport() {
@@ -3667,48 +3792,32 @@ function renderFirmCommission() {
 }
 
 function getSelectedHistoryScope() {
-  const selected = el.weekArchiveFilter?.value || "current";
-  if (selected !== "current") {
-    const archive = (state.weekArchives || []).find((item) => item.id === selected);
-    if (archive) {
-      return {
-        key: archive.id,
-        label: archive.label || "Semana arquivada",
-        period: archive.period || "Periodo arquivado",
-        archived: true,
-        sales: archive.sales || [],
-        expenses: archive.expenses || [],
-      };
-    }
-  }
+  const week = getSelectedFinancialWeek();
+  const period = week
+    ? `${DATE.format(isoToLocalDate(week.startDate))} - ${DATE.format(isoToLocalDate(week.endDate))}`
+    : "Lançamentos atuais";
   return {
-    key: "current",
-    label: getSelectedFinancialWeek()?.label || "Semana atual",
-    period: getSelectedFinancialWeek()
-      ? `${DATE.format(isoToLocalDate(getSelectedFinancialWeek().startDate))} - ${DATE.format(isoToLocalDate(getSelectedFinancialWeek().endDate))}`
-      : "Lancamentos atuais",
+    key: week ? weekKey(week) : "current",
+    label: week?.label || "Semana selecionada",
+    period,
     archived: false,
-    sales: recordsForWeek(getSelectedFinancialWeek()).sales,
-    expenses: recordsForWeek(getSelectedFinancialWeek()).expenses,
+    sales: recordsForWeek(week).sales,
+    expenses: recordsForWeek(week).expenses,
   };
 }
 
 function renderWeekArchiveFilter() {
   if (!el.weekArchiveFilter) return;
-  const previous = el.weekArchiveFilter.value || "current";
   const week = getSelectedFinancialWeek();
-  const options = [
-    `<option value="current">${escapeHTML(week?.label || "Semana atual")} selecionada</option>`,
-    ...(state.weekArchives || []).map((archive) => {
-      const details = archive.period ? ` - ${archive.period}` : "";
-      return `<option value="${escapeHTML(archive.id)}">${escapeHTML(archive.label || "Semana arquivada")}${escapeHTML(
-        details,
-      )}</option>`;
-    }),
-  ];
-  el.weekArchiveFilter.innerHTML = options.join("");
-  const exists = [...el.weekArchiveFilter.options].some((option) => option.value === previous);
-  el.weekArchiveFilter.value = exists ? previous : "current";
+  const selectedWeekKey = week ? weekKey(week) : "current";
+  const period = week
+    ? `${DATE.format(isoToLocalDate(week.startDate))} a ${DATE.format(isoToLocalDate(week.endDate))}`
+    : "período atual";
+  el.weekArchiveFilter.innerHTML = `<option value="current">${escapeHTML(
+    `${week?.label || "Semana selecionada"} - ${period}`,
+  )}</option>`;
+  el.weekArchiveFilter.dataset.weekKey = selectedWeekKey;
+  el.weekArchiveFilter.value = "current";
 }
 
 function renderSales() {
@@ -3792,9 +3901,7 @@ function renderSales() {
   if (!rows.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state firm-empty";
-    empty.textContent = scope.archived
-      ? "Nenhuma venda encontrada nessa semana arquivada."
-      : "Semana atual limpa. Registre as vendas de ontem e hoje.";
+    empty.textContent = "Nenhuma venda encontrada na semana selecionada.";
     el.salesCards.append(empty);
     return;
   }
@@ -4516,7 +4623,7 @@ window.addEventListener("appinstalled", () => {
   el.installAppBtn.classList.add("hidden");
 });
 
-el.saleForm.addEventListener("submit", (event) => {
+el.saleForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!isAdmin()) return;
   const amount = parseCurrency(el.saleAmount.value);
@@ -4571,6 +4678,7 @@ el.saleForm.addEventListener("submit", (event) => {
   el.saleFormat.value = "standard";
   setCurrencyInput(el.saleAmount, 0);
   saveState();
+  await confirmCriticalCloudSave("venda");
   render();
 });
 
@@ -4719,7 +4827,7 @@ el.agentEditForm.addEventListener("submit", (event) => {
 el.agentEditCancel.addEventListener("click", () => el.agentEditDialog.close());
 el.agentEditCancelTop.addEventListener("click", () => el.agentEditDialog.close());
 
-el.expenseForm.addEventListener("submit", (event) => {
+el.expenseForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!isAdmin()) return;
   const amount = parseCurrency(el.expenseAmount.value);
@@ -4746,6 +4854,7 @@ el.expenseForm.addEventListener("submit", (event) => {
   el.expenseDate.value = todayISO();
   setCurrencyInput(el.expenseAmount, 0);
   saveState();
+  await confirmCriticalCloudSave("despesa");
   render();
 });
 
@@ -4966,6 +5075,7 @@ el.nextFinanceMonthBtn?.addEventListener("click", () => {
   render();
 });
 el.closeSelectedWeekBtn?.addEventListener("click", closeSelectedWeek);
+el.closeSelectedWeekFromHistoryBtn?.addEventListener("click", closeSelectedWeek);
 el.closingMonthFilter?.addEventListener("change", renderWeeklyClosings);
 el.closingYearFilter?.addEventListener("change", renderWeeklyClosings);
 el.prevCalendarMonthBtn?.addEventListener("click", () => {
@@ -5145,11 +5255,18 @@ el.undoResetBtn.addEventListener("click", () => {
   render();
 });
 
+const pendingStartupSave = loadPendingCloudSave();
+if (pendingStartupSave?.state) {
+  state = loadStateFromObject(mergeCloudStates(state, pendingStartupSave.state));
+  pendingCloudSave = true;
+}
+
 syncFinanceWeekToToday();
 render();
 if (currentSession()) {
   loadStateFromCloud();
   setupRealtimeSubscription();
+  if (pendingCloudSave) scheduleCloudSave(1200);
 }
 
 window.addEventListener("online", () => refreshFromCloud({ manual: false }));
@@ -5171,3 +5288,7 @@ if ("serviceWorker" in navigator) {
     });
   });
 }
+
+
+
+
