@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
@@ -352,6 +352,12 @@
           <div class="finance-week-summary">
             <span id="selectedWeekPeriod">Período da semana</span>
             <strong id="selectedWeekStatus">Em andamento</strong>
+          </div>
+          <div class="general-history-actions" aria-label="Ações da semana selecionada">
+            <button class="ghost-button" type="button" data-view-target="history">Vendas da semana</button>
+            <button class="ghost-button" type="button" data-view-target="expenses" data-admin-only>Despesas da semana</button>
+            <button class="ghost-button" type="button" data-view-target="firmCommission" data-admin-only>Firma da semana</button>
+            <button class="ghost-button" type="button" data-view-target="linePayments">Comprovantes</button>
           </div>
         </section>
 
@@ -1146,10 +1152,9 @@
     </dialog>
 
     <script src="./migration-data.js?v=20260624-permissoes"></script>
-    <script src="./financeiro.js?v=20260727-fechamento-semana"></script>
+    <script src="./financeiro.js?v=20260727-editar-semana-passada"></script>
   </body>
 </html>
-
 
 
 

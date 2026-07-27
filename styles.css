@@ -370,6 +370,20 @@
   text-align: right;
 }
 
+.general-history-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.general-history-actions .ghost-button {
+  min-height: 46px;
+  color: #fff4d0;
+  border-color: rgba(242, 205, 115, 0.35);
+  background: rgba(242, 205, 115, 0.06);
+}
+
 .week-status-badge,
 .finance-week-summary strong,
 .closing-card > div:first-child span {
@@ -6768,5 +6782,9 @@ h2 {
 @media (max-width: 767.98px) {
   [data-view="generalHistory"] .finance-week-shell {
     padding: 16px !important;
+  }
+
+  .general-history-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

@@ -1,4 +1,4 @@
-const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+﻿const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const DATE = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" });
 const WEEKDAY = new Intl.DateTimeFormat("pt-BR", { weekday: "long", timeZone: "UTC" });
 const STORE_KEY = "financeiro-consignado-v1";
@@ -1249,18 +1249,20 @@ function getSelectedFinancialWeek() {
   return weeks.find((week) => week.id === state.selectedFinanceWeek) || currentWeek || weeks[0];
 }
 
-function syncFinanceWeekToToday() {
+function syncFinanceWeekToToday({ force = false } = {}) {
   const today = todayISO();
   const todayMonth = today.slice(0, 7);
   const currentWeek = getCurrentFinancialWeek(todayMonth);
-  const selectedWeek = getSelectedFinancialWeek();
-  const shouldMoveToCurrentWeek =
-    !state.selectedFinanceMonth ||
-    state.selectedFinanceMonth !== todayMonth ||
-    !selectedWeek ||
-    today > selectedWeek.endDate;
+  if (!currentWeek) return false;
 
-  if (!currentWeek || !shouldMoveToCurrentWeek) return false;
+  const selectedWeekExists = Boolean(
+    state.selectedFinanceMonth &&
+      state.selectedFinanceWeek &&
+      getFinancialWeeks(state.selectedFinanceMonth).some((week) => week.id === state.selectedFinanceWeek),
+  );
+  const shouldMoveToCurrentWeek = force || !selectedWeekExists;
+
+  if (!shouldMoveToCurrentWeek) return false;
   state.selectedFinanceMonth = todayMonth;
   state.selectedFinanceWeek = currentWeek.id;
   return true;
@@ -3696,8 +3698,10 @@ function getSelectedHistoryScope() {
 
 function renderWeekArchiveFilter() {
   if (!el.weekArchiveFilter) return;
-  const previous = el.weekArchiveFilter.value || "current";
   const week = getSelectedFinancialWeek();
+  const selectedWeekKey = week ? weekKey(week) : "current";
+  const previousWeekKey = el.weekArchiveFilter.dataset.weekKey;
+  const previous = previousWeekKey === selectedWeekKey ? el.weekArchiveFilter.value || "current" : "current";
   const options = [
     `<option value="current">${escapeHTML(week?.label || "Semana atual")} selecionada</option>`,
     ...(state.weekArchives || []).map((archive) => {
@@ -3708,6 +3712,7 @@ function renderWeekArchiveFilter() {
     }),
   ];
   el.weekArchiveFilter.innerHTML = options.join("");
+  el.weekArchiveFilter.dataset.weekKey = selectedWeekKey;
   const exists = [...el.weekArchiveFilter.options].some((option) => option.value === previous);
   el.weekArchiveFilter.value = exists ? previous : "current";
 }
@@ -5173,6 +5178,7 @@ if ("serviceWorker" in navigator) {
     });
   });
 }
+
 
 
 
