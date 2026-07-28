@@ -1351,6 +1351,11 @@ function getSelectedFinancialWeek() {
   return weeks.find((week) => week.id === state.selectedFinanceWeek) || currentWeek || weeks[0];
 }
 
+function getOperationalFinancialWeek() {
+  const todayMonth = todayISO().slice(0, 7);
+  return getLateClosingWeek() || getCurrentFinancialWeek(todayMonth);
+}
+
 function getLateClosingWeek() {
   if (!state.lateClosingWeekId) return null;
   const monthKey = state.lateClosingWeekId.slice(0, 7);
@@ -1500,7 +1505,7 @@ function recordsForWeek(week) {
 }
 
 function getOperationalRecords() {
-  return recordsForWeek(getSelectedFinancialWeek());
+  return recordsForWeek(getOperationalFinancialWeek());
 }
 
 function markWeekRecordsAsClosed(week, closingId) {
@@ -2078,10 +2083,12 @@ function renderSummary() {
   const goal = getCapitalGoal();
   const capitalPercent = goal > 0 ? Math.min(100, (capital / goal) * 100) : 0;
   const remaining = Math.max(0, goal - capital);
-  const selectedWeek = getSelectedFinancialWeek();
-  const weekPeriod = selectedWeek
-    ? `${selectedWeek.label} - ${DATE.format(isoToLocalDate(selectedWeek.startDate))} até ${DATE.format(isoToLocalDate(selectedWeek.endDate))}`
-    : "Período selecionado";
+  const operationalWeek = getOperationalFinancialWeek();
+  const weekPeriod = operationalWeek
+    ? `${operationalWeek.label} - ${DATE.format(isoToLocalDate(operationalWeek.startDate))} até ${DATE.format(
+        isoToLocalDate(operationalWeek.endDate),
+      )}`
+    : "Semana atual";
   el.totalSold.textContent = currency(totals.totalSold);
   if (el.dashboardSalesBalance) el.dashboardSalesBalance.textContent = currency(totals.totalSold);
   if (el.feedSalesBalance) el.feedSalesBalance.textContent = currency(totals.totalSold);
@@ -4579,7 +4586,7 @@ function bindDynamicViewButtons(container) {
 
 function renderSalePageList() {
   if (!el.salePageCards) return;
-  const rows = activeSales(recordsForWeek(getSelectedFinancialWeek()).sales).slice(0, 10);
+  const rows = activeSales(getOperationalRecords().sales).slice(0, 10);
   el.salePageCards.innerHTML = "";
   if (!rows.length) {
     const empty = document.createElement("div");
@@ -5448,7 +5455,7 @@ el.deleteAllRecordsBtn.addEventListener("click", () => {
   if (!finalConfirmation) return;
 
   const now = new Date().toISOString();
-  const selectedWeek = getSelectedFinancialWeek();
+  const selectedWeek = getOperationalFinancialWeek();
   const records = getOperationalRecords();
   const reason = selectedWeek ? `Fechamento semanal ${weekKey(selectedWeek)}` : "Fechamento semanal";
   const activeSalesList = activeSales(records.sales);
