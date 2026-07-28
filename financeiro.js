@@ -123,6 +123,7 @@ let cloudSavePromise = null;
 let cloudUpdatedAt = null;
 let pendingCloudSave = false;
 let pendingCloudRetryTimer = null;
+let lastCloudError = "";
 let settingsAuditTimer = null;
 let realtimeSocket = null;
 let realtimeHeartbeatTimer = null;
@@ -504,9 +505,20 @@ function markPendingCloudSave(reason = "Alteracao pendente") {
 
 function clearPendingCloudSave() {
   pendingCloudSave = false;
+  lastCloudError = "";
   window.clearTimeout(cloudSaveTimer);
   localStorage.removeItem(PENDING_CLOUD_KEY);
   window.clearTimeout(pendingCloudRetryTimer);
+}
+
+async function responseErrorMessage(response, prefix) {
+  let detail = "";
+  try {
+    detail = await response.text();
+  } catch {
+    detail = "";
+  }
+  return `${prefix} ${response.status}${detail ? ` - ${detail.slice(0, 240)}` : ""}`;
 }
 
 async function confirmCriticalCloudSave(actionName = "alteracao") {
@@ -682,6 +694,7 @@ async function loadStateFromCloud({ silent = false } = {}) {
         migrateCalculationSnapshots();
         ensureAgentSectors(["2D", "LOIRA"], ["1 Linha", "2 Linha", "3 Linha"]);
         applyDataMigrations();
+        enforceClosedWeeks();
         syncFinanceWeekToToday();
         cloudSyncEnabled = true;
         cloudUpdatedAt = cloudRow?.updated_at || cloudData.savedAt || new Date().toISOString();
@@ -755,20 +768,28 @@ async function saveStateToCloud() {
       const savedAt = new Date().toISOString();
       dataToSave.savedAt = savedAt;
       state.savedAt = savedAt;
-      const response = await fetch(`${SUPABASE_STATE_ENDPOINT}?on_conflict=id`, {
-        method: "POST",
+      const response = await fetch(`${SUPABASE_STATE_ENDPOINT}?id=eq.main`, {
+        method: "PATCH",
         headers: supabaseHeaders({
-          Prefer: "resolution=merge-duplicates,return=representation",
+          Prefer: "return=minimal",
         }),
         body: JSON.stringify({
-          id: "main",
           data: sanitizeForCloud(dataToSave),
           updated_at: savedAt,
         }),
       });
-      if (!response.ok) throw new Error(`Supabase gravacao ${response.status}`);
-      const savedRow = (await response.json())?.[0];
-      cloudUpdatedAt = savedRow?.updated_at || savedAt;
+      if (!response.ok) throw new Error(await responseErrorMessage(response, "Supabase gravacao"));
+
+      const verifyResponse = await fetch(`${SUPABASE_STATE_ENDPOINT}?id=eq.main&select=data,updated_at`, {
+        headers: supabaseHeaders({ Accept: "application/json" }),
+      });
+      if (!verifyResponse.ok) throw new Error(await responseErrorMessage(verifyResponse, "Supabase confirmacao"));
+      const verifiedRow = (await verifyResponse.json())?.[0];
+      const verifiedSavedAt = verifiedRow?.data?.savedAt || "";
+      if (verifiedSavedAt !== savedAt) {
+        throw new Error("Supabase nao confirmou a ultima versao salva.");
+      }
+      cloudUpdatedAt = verifiedRow?.updated_at || savedAt;
       clearPendingCloudSave();
       localStorage.setItem(STORE_KEY, JSON.stringify(state));
       updateLastSyncLabel(new Date());
@@ -776,8 +797,9 @@ async function saveStateToCloud() {
     })();
     return await cloudSavePromise;
   } catch (error) {
+    lastCloudError = error?.message || "Erro desconhecido na sincronizacao";
     markPendingCloudSave("Falha na nuvem. Reenvio automatico pendente");
-    if (el.lastSyncLabel) el.lastSyncLabel.textContent = "Falha na sincronização";
+    if (el.lastSyncLabel) el.lastSyncLabel.textContent = `Falha na sincronização: ${lastCloudError.slice(0, 120)}`;
     window.clearTimeout(pendingCloudRetryTimer);
     pendingCloudRetryTimer = window.setTimeout(saveStateToCloud, 5000);
     console.warn("Nao foi possivel salvar no Supabase.", error);
@@ -864,7 +886,9 @@ function updateLastSyncLabel(date = new Date()) {
   lastSyncAt = date;
   if (!el.lastSyncLabel) return;
   if (pendingCloudSave || loadPendingCloudSave()) {
-    el.lastSyncLabel.textContent = "Alterações pendentes de confirmação na nuvem";
+    el.lastSyncLabel.textContent = lastCloudError
+      ? `Alterações pendentes: ${lastCloudError.slice(0, 120)}`
+      : "Alterações pendentes de confirmação na nuvem";
     return;
   }
   el.lastSyncLabel.textContent = `Dados sincronizados: ${date.toLocaleString("pt-BR", {
@@ -1507,6 +1531,36 @@ function markWeekRecordsAsClosed(week, closingId) {
     closed.allocations += 1;
   });
   return closed;
+}
+
+function findWeekFromClosing(closing) {
+  if (!closing) return null;
+  const monthKey = `${closing.year}-${String(closing.month).padStart(2, "0")}`;
+  return getFinancialWeeks(monthKey).find((week) => weekKey(week) === closing.weekKey) || null;
+}
+
+function enforceClosedWeeks() {
+  const closings = (state.weeklyClosings || []).filter((closing) => closing.status === "Fechada");
+  let changed = false;
+  closings.forEach((closing) => {
+    const week = findWeekFromClosing(closing);
+    if (!week) return;
+    const closed = markWeekRecordsAsClosed(week, closing.id);
+    if (closed.sales || closed.expenses || closed.allocations) {
+      closing.closedRecords = {
+        sales: Number(closing.closedRecords?.sales || 0) + closed.sales,
+        expenses: Number(closing.closedRecords?.expenses || 0) + closed.expenses,
+        allocations: Number(closing.closedRecords?.allocations || 0) + closed.allocations,
+      };
+      closing.updatedAt = new Date().toISOString();
+      changed = true;
+    }
+  });
+  if (changed) {
+    state.lateClosingWeekId = null;
+    saveState();
+  }
+  return changed;
 }
 
 function summarizePeriod({ sales = [], expenses = [], allocations = [] } = {}) {
@@ -5454,6 +5508,7 @@ if (pendingStartupSave?.state) {
   pendingCloudSave = true;
 }
 
+enforceClosedWeeks();
 syncFinanceWeekToToday();
 render();
 if (currentSession()) {
