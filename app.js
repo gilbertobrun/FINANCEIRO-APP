@@ -131,6 +131,7 @@ let realtimeReconnectTimer = null;
 let realtimeRef = 1;
 let isManualRefreshing = false;
 let lastSyncAt = new Date();
+let historyScopeMode = "operational";
 
 const el = {
   loginScreen: document.querySelector("#loginScreen"),
@@ -2639,6 +2640,7 @@ function setActiveView(viewName) {
     button.classList.toggle("active", button.dataset.viewTarget === viewName);
   });
   el.viewTitle.textContent = viewTitles[viewName] || "Tela de Início";
+  if (viewName === "history") renderSales();
 }
 
 function renderExpenses() {
@@ -3954,13 +3956,13 @@ function renderFirmCommission() {
 }
 
 function getSelectedHistoryScope() {
-  const week = getSelectedFinancialWeek();
+  const week = historyScopeMode === "selected" ? getSelectedFinancialWeek() : getOperationalFinancialWeek();
   const period = week
     ? `${DATE.format(isoToLocalDate(week.startDate))} - ${DATE.format(isoToLocalDate(week.endDate))}`
     : "Lançamentos atuais";
   return {
     key: week ? weekKey(week) : "current",
-    label: week?.label || "Semana selecionada",
+    label: week?.label || (historyScopeMode === "selected" ? "Semana selecionada" : "Semana atual"),
     period,
     archived: false,
     sales: recordsForWeek(week).sales,
@@ -4052,13 +4054,13 @@ function moveTodayRecordsToSelectedWeek() {
 
 function renderWeekArchiveFilter() {
   if (!el.weekArchiveFilter) return;
-  const week = getSelectedFinancialWeek();
+  const week = historyScopeMode === "selected" ? getSelectedFinancialWeek() : getOperationalFinancialWeek();
   const selectedWeekKey = week ? weekKey(week) : "current";
   const period = week
     ? `${DATE.format(isoToLocalDate(week.startDate))} a ${DATE.format(isoToLocalDate(week.endDate))}`
     : "período atual";
   el.weekArchiveFilter.innerHTML = `<option value="current">${escapeHTML(
-    `${week?.label || "Semana selecionada"} - ${period}`,
+    `${week?.label || (historyScopeMode === "selected" ? "Semana selecionada" : "Semana atual")} - ${period}`,
   )}</option>`;
   el.weekArchiveFilter.dataset.weekKey = selectedWeekKey;
   el.weekArchiveFilter.value = "current";
@@ -4578,6 +4580,9 @@ function bindDynamicViewButtons(container) {
   if (!container) return;
   container.querySelectorAll("[data-view-target]").forEach((button) => {
     button.addEventListener("click", () => {
+      if (button.dataset.viewTarget === "history") {
+        historyScopeMode = button.closest('.app-view')?.dataset.view === "generalHistory" ? "selected" : "operational";
+      }
       setActiveView(button.dataset.viewTarget);
       setMobileMenu(false);
     });
@@ -5299,6 +5304,9 @@ el.simulationForm.addEventListener("submit", (event) => {
 );
 document.querySelectorAll("[data-view-target]").forEach((button) => {
   button.addEventListener("click", () => {
+    if (button.dataset.viewTarget === "history") {
+      historyScopeMode = button.closest('.app-view')?.dataset.view === "generalHistory" ? "selected" : "operational";
+    }
     setActiveView(button.dataset.viewTarget);
     setMobileMenu(false);
   });
