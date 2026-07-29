@@ -50,6 +50,7 @@ const DEFAULT_PROFILES = {
 };
 const SALE_FORMATS = {
   standard: "Imposto 35%",
+  bank35Special: "Imposto 35% especial",
   machine: "NFC",
   bank40: "Imposto 40%",
   bank40Special: "40% especial",
@@ -347,6 +348,7 @@ const el = {
   previewDownloadFirmReceiptBtn: document.querySelector("#previewDownloadFirmReceiptBtn"),
   previewPrintFirmReceiptBtn: document.querySelector("#previewPrintFirmReceiptBtn"),
   historyStandardTotal: document.querySelector("#historyStandardTotal"),
+  historyBank35SpecialTotal: document.querySelector("#historyBank35SpecialTotal"),
   historyBank40Total: document.querySelector("#historyBank40Total"),
   historyBank40SpecialTotal: document.querySelector("#historyBank40SpecialTotal"),
   historyMachineTotal: document.querySelector("#historyMachineTotal"),
@@ -1745,15 +1747,17 @@ function calculateSale(sale, useSnapshot = true) {
   const line2Rate = LINE_2_RATE;
   const machineFee = format === "machine" ? amount * 0.05 : 0;
   const amountAfterMachineFee = amount - machineFee;
+  const isBank35Special = format === "bank35Special";
   const isBank40 = format === "bank40" || format === "bank40Special";
+  const bankTaxRate = isBank40 ? 40 : isBank35Special ? 35 : settings.bankTaxRate;
   const bankTax =
     format === "machine"
       ? amountAfterMachineFee / 2
-      : amount * pct(isBank40 ? 40 : settings.bankTaxRate);
+      : amount * pct(bankTaxRate);
   const firmCash =
     format === "standard"
       ? amount * pct(settings.firmCashRate)
-      : format === "bank40Special"
+      : format === "bank40Special" || isBank35Special
         ? amount * pct(5)
         : 0;
   const bankTaxNet = bankTax - firmCash;
@@ -1797,7 +1801,7 @@ function calculateSale(sale, useSnapshot = true) {
     totalFirm,
     hasThirdAgent,
     line2Rate,
-    bankTaxRate: isBank40 ? 40 : settings.bankTaxRate,
+    bankTaxRate,
     line1Rate: LINE_1_RATE,
     line3Rate: settings.line3Rate,
     lineGeneralRate: GENERAL_LINE_RATE,
@@ -4073,12 +4077,14 @@ function renderSales() {
   const rows = scope.sales.filter((sale) => filter === "Todos" || sale.status === filter);
   const formatTotals = rows.reduce(
     (totals, sale) => {
-      totals[getSaleFormat(sale)] += Number(sale.amount || 0);
+      const format = getSaleFormat(sale);
+      totals[format] = (totals[format] || 0) + Number(sale.amount || 0);
       return totals;
     },
-    { standard: 0, bank40: 0, bank40Special: 0, machine: 0 },
+    { standard: 0, bank35Special: 0, bank40: 0, bank40Special: 0, machine: 0 },
   );
   el.historyStandardTotal.textContent = currency(formatTotals.standard);
+  el.historyBank35SpecialTotal.textContent = currency(formatTotals.bank35Special);
   el.historyBank40Total.textContent = currency(formatTotals.bank40);
   el.historyBank40SpecialTotal.textContent = currency(formatTotals.bank40Special);
   el.historyMachineTotal.textContent = currency(formatTotals.machine);

@@ -302,6 +302,7 @@
                   Formato
                   <select id="simulationFormat">
                     <option value="standard">Imposto 35%</option>
+                    <option value="bank35Special">Imposto 35% especial</option>
                     <option value="bank40">Imposto 40%</option>
                     <option value="bank40Special">40% especial</option>
                     <option value="machine">NFC</option>
@@ -403,6 +404,7 @@
                 Formato de venda
                 <select id="saleFormat" name="format">
                   <option value="standard">Imposto 35%</option>
+                  <option value="bank35Special">Imposto 35% especial</option>
                   <option value="bank40">Imposto 40%</option>
                   <option value="bank40Special">40% especial</option>
                   <option value="machine">NFC</option>
@@ -797,6 +799,10 @@
                 <strong id="historyStandardTotal">R$ 0,00</strong>
               </article>
               <article>
+                <span>35% especial</span>
+                <strong id="historyBank35SpecialTotal">R$ 0,00</strong>
+              </article>
+              <article>
                 <span>Imposto 40%</span>
                 <strong id="historyBank40Total">R$ 0,00</strong>
               </article>
@@ -1117,6 +1123,7 @@
             Formato de venda
             <select id="saleEditFormat" required>
               <option value="standard">Imposto 35%</option>
+              <option value="bank35Special">Imposto 35% especial</option>
               <option value="bank40">Imposto 40%</option>
               <option value="bank40Special">40% especial</option>
               <option value="machine">NFC</option>
@@ -1164,7 +1171,7 @@
     </dialog>
 
     <script src="./migration-data.js?v=20260624-permissoes"></script>
-    <script src="./financeiro.js?v=20260728-historico-semana-atual"></script>
+    <script src="./financeiro.js?v=20260729-imposto-35-especial"></script>
   </body>
 </html>
 
